@@ -1,0 +1,25 @@
+# Dependencies
+/deps/
+/old/frontend/node_modules/
+
+# Build artifacts
+/_build/
+/cover/
+/doc/
+*.ez
+
+# Frontend build
+/old/frontend/.expo/
+/old/frontend/web-build/
+
+# Temp / system
+/tmp/
+erl_crash.dump
+.DS_Store
+
+# Old project's git (has its own repo)
+/old/.git/
+
+# IDE
+.vscode/
+.idea/
