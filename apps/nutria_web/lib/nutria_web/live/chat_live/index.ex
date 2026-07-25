@@ -24,9 +24,12 @@ defmodule NutriaWeb.ChatLive.Index do
      |> assign(:messages, [])
      |> assign(:current_conversation_id, nil)
      |> assign(:sending, false)
-     |> assign(:streaming_text, "")
-     |> assign(:suggestions, @suggestions)
-     |> assign(:llm_mode, :fast)}
+      |> assign(:streaming_text, "")
+      |> assign(:streaming_buffer, "")
+      |> assign(:stream_complete, false)
+      |> assign(:thinking_title, "")
+      |> assign(:suggestions, @suggestions)
+      |> assign(:llm_mode, :fast)}
   end
 
   @impl true
@@ -77,7 +80,7 @@ defmodule NutriaWeb.ChatLive.Index do
         mode = socket.assigns.llm_mode
         lv_pid = self()
 
-        task =
+        main_task =
           Task.async(fn ->
             send_message_and_stream(user.id, text, conv_id, mode, lv_pid)
           end)
@@ -93,7 +96,10 @@ defmodule NutriaWeb.ChatLive.Index do
          socket
          |> assign(:sending, true)
          |> assign(:streaming_text, "")
-         |> assign(:streaming_task, task)
+         |> assign(:streaming_buffer, "")
+         |> assign(:stream_complete, false)
+         |> assign(:thinking_title, "")
+         |> assign(:streaming_task, main_task)
          |> assign(:new_conv_id, nil)
          |> update(:messages, &(&1 ++ [user_msg]))}
       else
@@ -124,40 +130,53 @@ defmodule NutriaWeb.ChatLive.Index do
 
   @impl true
   def handle_info({:chunk, text}, socket) do
-    {:noreply, update(socket, :streaming_text, &(&1 <> text))}
+    socket =
+      if palavra_colada?(socket.assigns.streaming_buffer, text) do
+        update(socket, :streaming_buffer, &(&1 <> " " <> text))
+      else
+        update(socket, :streaming_buffer, &(&1 <> text))
+      end
+
+    socket = assign(socket, :thinking_title, "")
+    Process.send_after(self(), :stream_tick, 5)
+    {:noreply, socket}
+  end
+
+  def handle_info({:thinking_title, title}, socket) do
+    if socket.assigns.streaming_text == "" and socket.assigns.thinking_title == "" do
+      {:noreply, assign(socket, :thinking_title, title)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:stream_tick, socket) do
+    case socket.assigns.streaming_buffer do
+      "" ->
+        if socket.assigns.stream_complete do
+          finalize_stream(socket)
+        else
+          {:noreply, socket}
+        end
+
+      buffer ->
+        {char, rest} = String.split_at(buffer, 1)
+    Process.send_after(self(), :stream_tick, 5)
+        {:noreply,
+         socket
+         |> assign(:streaming_buffer, rest)
+         |> assign(:streaming_text, socket.assigns.streaming_text <> char)}
+    end
   end
 
   def handle_info({:stream_done, _full_text}, socket) do
-    user = socket.assigns.current_user
-    conv_id = socket.assigns.current_conversation_id
-    full_text = socket.assigns.streaming_text
-
-    if full_text != "" do
-      {:ok, _msg} = Conversations.add_message(conv_id, "assistant", full_text)
-    end
-
-    conversations = if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
-
-    {:noreply,
-     socket
-     |> assign(:sending, false)
-     |> assign(:streaming_text, "")
-     |> assign(:messages, socket.assigns.messages ++ [%{
-       "id" => Ecto.UUID.generate(),
-       "role" => "assistant",
-       "text" => full_text,
-       "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-     }])
-     |> assign(:conversations, conversations)}
+    socket = assign(socket, :stream_complete, true)
+    Process.send_after(self(), :stream_tick, 5)
+    {:noreply, socket}
   end
 
   def handle_info({:conv_created, conv_id}, socket) do
     {:noreply, assign(socket, :current_conversation_id, conv_id)}
-  end
-
-  def handle_info({ref, _result}, socket) when is_reference(ref) do
-    Process.demonitor(ref, [:flush])
-    {:noreply, socket}
   end
 
   def handle_info({ref, {:error, message}}, socket) when is_reference(ref) do
@@ -167,11 +186,24 @@ defmodule NutriaWeb.ChatLive.Index do
      socket
      |> assign(:sending, false)
      |> assign(:streaming_text, "")
+     |> assign(:streaming_buffer, "")
+     |> assign(:stream_complete, false)
      |> put_flash(:error, message)}
+  end
+
+  def handle_info({ref, _result}, socket) when is_reference(ref) do
+    Process.demonitor(ref, [:flush])
+    {:noreply, socket}
   end
 
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
     {:noreply, socket}
+  end
+
+  defp palavra_colada?(buffer, chunk) do
+    buffer != "" and
+      String.match?(buffer, ~r/[a-zA-ZáéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ]$/) and
+      String.match?(chunk, ~r/^[a-zA-ZáéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ]/)
   end
 
   defp send_message_and_stream(user_id, text, conv_id, mode, lv_pid) do
@@ -207,12 +239,48 @@ defmodule NutriaWeb.ChatLive.Index do
     Conversations.list_conversations(user_id)
   end
 
+  defp finalize_stream(socket) do
+    full_text = socket.assigns.streaming_text
+
+    if full_text != "" do
+      conv_id = socket.assigns.current_conversation_id
+      {:ok, _msg} = Conversations.add_message(conv_id, "assistant", full_text)
+    end
+
+    user = socket.assigns.current_user
+    conversations = if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
+
+    if full_text == "" do
+      {:noreply,
+       socket
+       |> assign(:sending, false)
+       |> assign(:streaming_text, "")
+       |> assign(:streaming_buffer, "")
+       |> assign(:stream_complete, false)
+       |> assign(:thinking_title, "")}
+    else
+      {:noreply,
+       socket
+       |> assign(:sending, false)
+       |> assign(:streaming_text, "")
+       |> assign(:streaming_buffer, "")
+       |> assign(:stream_complete, false)
+       |> assign(:thinking_title, "")
+       |> assign(:messages, socket.assigns.messages ++ [%{
+         "id" => Ecto.UUID.generate(),
+         "role" => "assistant",
+         "text" => full_text,
+         "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+       }])
+       |> assign(:conversations, conversations)}
+    end
+  end
+
   defp render_markdown(text) do
     text
     |> escape_html()
     |> bold()
-    |> list_items()
-    |> line_breaks()
+    |> format_paragraphs()
   end
 
   defp escape_html(text) do
@@ -226,37 +294,89 @@ defmodule NutriaWeb.ChatLive.Index do
     Regex.replace(~r/\*\*(.+?)\*\*/, text, "<strong>\\1</strong>")
   end
 
-  defp list_items(text) do
+  defp format_paragraphs(text) do
     text
-    |> String.split("\n")
-    |> Enum.map(fn line ->
-      cond do
-        String.match?(line, ~r/^- /) ->
-          "<li>#{String.trim_leading(line, "- ")}</li>"
-
-        String.match?(line, ~r/^\d+\. /) ->
-          "<li>#{line}</li>"
-
-        true ->
-          "<p>#{line}</p>"
-      end
-    end)
+    |> String.split("\n\n")
+    |> Enum.map(&format_block/1)
     |> Enum.join("")
-    |> then(fn html ->
-      html
-      |> String.replace(~r/<li>(.+?)<\/li><li>/, "<li>\\1</li>\n<li>")
-      |> then(fn h ->
-        if String.contains?(h, "<li>") do
-          "<ul>#{h}</ul>"
-        else
-          h
-        end
-      end)
-    end)
   end
 
-  defp line_breaks(text) do
-    String.replace(text, "\n\n", "<br><br>")
+  defp format_block(block) do
+    lines = String.split(block, "\n")
+
+    cond do
+      Enum.any?(lines, &String.match?(&1, ~r/^[-*] /)) ->
+        items =
+          lines
+          |> Enum.filter(&String.match?(&1, ~r/^[-*] /))
+          |> Enum.map(fn line -> "<li>#{String.trim_leading(line, "- ")}</li>" end)
+          |> Enum.join("")
+        "<ul>#{items}</ul>"
+
+      Enum.any?(lines, &String.match?(&1, ~r/^\d+\. /)) ->
+        items =
+          lines
+          |> Enum.filter(&String.match?(&1, ~r/^\d+\. /))
+          |> Enum.map(fn line ->
+            text = String.replace(line, ~r/^\d+\. /, "")
+            "<li>#{text}</li>"
+          end)
+          |> Enum.join("")
+        "<ul>#{items}</ul>"
+
+      true ->
+        body = Enum.join(lines, "<br>")
+        "<p>#{body}</p>"
+    end
+  end
+
+  defp render_streaming(text) do
+    text
+    |> escape_html()
+    |> streaming_bold()
+    |> streaming_paragraphs()
+  end
+
+  defp streaming_bold(text) do
+    parts = String.split(text, "**")
+
+    case length(parts) do
+      1 ->
+        hd(parts)
+
+      n when rem(n, 2) == 1 ->
+        parts
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn
+          [plain, bold] -> plain <> "<strong>" <> bold <> "</strong>"
+          [plain] -> plain
+        end)
+        |> Enum.join("")
+
+      n when rem(n, 2) == 0 ->
+        {complete, [open]} = Enum.split(parts, -1)
+
+        rendered =
+          complete
+          |> Enum.chunk_every(2)
+          |> Enum.map(fn
+            [plain, bold] -> plain <> "<strong>" <> bold <> "</strong>"
+            [plain] -> plain
+          end)
+          |> Enum.join("")
+
+        rendered <> "<strong>" <> open <> "</strong>"
+    end
+  end
+
+  defp streaming_paragraphs(text) do
+    text
+    |> String.split("\n\n")
+    |> Enum.map(fn block ->
+      body = String.replace(block, "\n", "<br>")
+      "<p>#{body}</p>"
+    end)
+    |> Enum.join("")
   end
 
   @impl true
@@ -289,7 +409,7 @@ defmodule NutriaWeb.ChatLive.Index do
               phx-click="toggle_mode"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Rápido
+              Basic
             </button>
             <button
               type="button"
@@ -339,18 +459,25 @@ defmodule NutriaWeb.ChatLive.Index do
             <%= if @streaming_text != "" do %>
               <div class="message assistant">
                 <div class="message-bubble streaming-cursor">
-                  <div id="streaming-text" phx-hook="StreamingText" data-text={@streaming_text}></div>
+                  <%= raw(render_streaming(@streaming_text)) %>
                 </div>
               </div>
             <% end %>
 
             <%= if @sending and @streaming_text == "" do %>
               <div class="message assistant">
+              <%= if @thinking_title != "" do %>
+                <div class="thinking-badge">
+                  <span class="thinking-icon">💭</span>
+                  Pensando: <%= @thinking_title %>
+                </div>
+              <% else %>
                 <div class="loading-dots">
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
+              <% end %>
               </div>
             <% end %>
           </div>
@@ -364,7 +491,7 @@ defmodule NutriaWeb.ChatLive.Index do
               phx-click="toggle_mode"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Rápido
+              Basic
             </button>
             <button
               type="button"

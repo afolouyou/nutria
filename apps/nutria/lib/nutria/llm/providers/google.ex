@@ -22,7 +22,12 @@ defmodule Nutria.LLM.Providers.Google do
 
     case Req.post(url, json: request, headers: [{"x-goog-api-key", api_key}], receive_timeout: 60_000) do
       {:ok, %Req.Response{status: 200, body: %{"candidates" => [%{"content" => %{"parts" => parts}} | _]}}} ->
-        text = parts |> Enum.map(& &1["text"]) |> Enum.join("")
+        text =
+          parts
+          |> Enum.reject(& &1["thought"])
+          |> Enum.map(& &1["text"])
+          |> Enum.join("")
+          |> strip_thinking_blocks()
         {:ok, text}
 
       {:ok, %Req.Response{status: 200, body: body}} ->
@@ -75,7 +80,11 @@ defmodule Nutria.LLM.Providers.Google do
 
     base = %{
       "contents" => contents,
-      "generationConfig" => %{"temperature" => temperature}
+      "generationConfig" => %{
+        "temperature" => temperature,
+        "maxOutputTokens" => 2048,
+        "topP" => 0.9
+      }
     }
 
     base =
@@ -93,6 +102,7 @@ defmodule Nutria.LLM.Providers.Google do
   end
 
   defp parse_sse_stream(stream, caller_pid, _provider) do
+    Process.delete(:title_sent)
     stream
     |> Enum.reduce(<<>>, fn chunk, buffer ->
       buffer = buffer <> chunk
@@ -126,8 +136,32 @@ defmodule Nutria.LLM.Providers.Google do
           if json != "" do
             case Jason.decode(json) do
               {:ok, %{"candidates" => [%{"content" => %{"parts" => parts}} | _]}} ->
-                text = parts |> Enum.map(& &1["text"]) |> Enum.join("")
-                if text != "", do: send(caller_pid, {:chunk, text})
+                if not Process.get(:title_sent, false) do
+                  thought_text =
+                    parts
+                    |> Enum.filter(& &1["thought"])
+                    |> Enum.map(& &1["text"])
+                    |> Enum.join("")
+
+                  if thought_text != "" do
+                    title = extract_title(thought_text)
+                    if title != "" do
+                      send(caller_pid, {:thinking_title, title})
+                      Process.put(:title_sent, true)
+                    end
+                  end
+                end
+
+                text =
+                  parts
+                  |> Enum.reject(& &1["thought"])
+                  |> Enum.map(& &1["text"])
+                  |> Enum.join("")
+                  |> strip_thinking_blocks()
+
+                if text != "" do
+                  send(caller_pid, {:chunk, text})
+                end
 
               _ ->
                 :ok
@@ -140,11 +174,28 @@ defmodule Nutria.LLM.Providers.Google do
     end)
   end
 
+  defp extract_title(text) do
+    text
+    |> String.trim()
+    |> String.replace(~r/^[-*\s]+/, "")
+    |> String.replace(~r/^(Input|Intent|Constraint|User|Response):\s*/i, "")
+    |> String.trim()
+    |> String.split(~r/\s+/, parts: 6)
+    |> Enum.take(5)
+    |> Enum.join(" ")
+  end
+
+  defp strip_thinking_blocks(text) do
+    text
+    |> String.replace(~r/<thinking>.*?<\/thinking>/s, "")
+    |> String.trim()
+  end
+
   defp default_api_key do
     Application.get_env(:nutria, :llm)[:google_api_key]
   end
 
   defp default_model do
-    Application.get_env(:nutria, :llm)[:fast_model] || "gemma-4-31b-it"
+    Application.get_env(:nutria, :llm)[:fast_model] || "gemma-4-26b-a4b-it"
   end
 end

@@ -14,7 +14,7 @@ config :nutria, :llm,
   google_api_key: System.get_env("GOOGLE_AI_KEY"),
   zen_api_key: System.get_env("ZEN_API_KEY"),
   fast_provider: :google,
-  fast_model: "gemma-4-31b-it",
+  fast_model: "gemma-4-26b-a4b-it",
   smart_provider: :zen,
   smart_model: "deepseek-v4-flash-free"
 

@@ -119,7 +119,9 @@ defmodule Nutria.LLM.Providers.Zen do
           if json != "[DONE]" && json != "" do
             case Jason.decode(json) do
               {:ok, %{"choices" => [%{"delta" => %{"content" => content}} | _]}} ->
-                if content, do: send(caller_pid, {:chunk, content})
+                if content do
+                  send(caller_pid, {:chunk, content})
+                end
 
               _ ->
                 :ok

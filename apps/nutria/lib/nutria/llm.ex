@@ -6,17 +6,14 @@ defmodule Nutria.LLM do
   require Logger
 
   @system_prompt """
-  Você é o NutrIA, um assistente nutricional simpático e especialista.
-  Responda SEMPRE em português brasileiro, de forma clara, objetiva e útil.
+  Você é o NutrIA, assistente nutricional brasileiro. Seja conciso e direto.
 
   Regras:
-  - Seja direto e prático. Vá direto ao ponto.
-  - Use markdown simples quando útil: **negrito** para termos importantes, listas com -, e emojis com moderação.
-  - Para análises de refeições: liste os nutrientes principais e dê uma nota de 1 a 10.
-  - Para planos alimentares: organize em tabela com horário, refeição e alimentos.
-  - Para dicas: seja específico e acionável, não genérico.
-  - Se não tem certeza sobre algo, diga claramente.
-  - Mantenha respostas concisas (máximo 300 palavras salvo pedido explícito de mais detalhe).
+  - Máximo 200 palavras
+  - Use markdown simples: **negrito** e listas com -
+  - Para análises: nutrientes principais + nota 1-10
+  - Para planos: horário + refeição + alimentos
+  - Se não souber, admita
   """
 
   @recipe_prompt """
@@ -47,7 +44,7 @@ defmodule Nutria.LLM do
     {provider_mod, model, api_key, fallback_mod, fallback_model, fallback_key} = resolve(mode)
     messages = build_chat_messages(text, prior_messages)
 
-    opts = [model: model, api_key: api_key, system_prompt: @system_prompt, temperature: 0.7]
+    opts = [model: model, api_key: api_key, system_prompt: @system_prompt, temperature: 0.3]
 
     case provider_mod.chat_stream(messages, caller_pid, opts) do
       :ok ->
@@ -55,7 +52,7 @@ defmodule Nutria.LLM do
 
       {:error, _, reason} ->
         Logger.warning("[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.7]
+        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.3]
 
         case fallback_mod.chat_stream(messages, caller_pid, fallback_opts) do
           :ok -> :ok
@@ -70,7 +67,7 @@ defmodule Nutria.LLM do
   def chat(text, prior_messages, mode \\ :fast) do
     {provider_mod, model, api_key, fallback_mod, fallback_model, fallback_key} = resolve(mode)
     messages = build_chat_messages(text, prior_messages)
-    opts = [model: model, api_key: api_key, system_prompt: @system_prompt, temperature: 0.7]
+    opts = [model: model, api_key: api_key, system_prompt: @system_prompt, temperature: 0.3]
 
     case provider_mod.chat(messages, opts) do
       {:ok, text} ->
@@ -78,7 +75,7 @@ defmodule Nutria.LLM do
 
       {:error, _, reason} ->
         Logger.warning("[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.7]
+        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.3]
 
         case fallback_mod.chat(messages, fallback_opts) do
           {:ok, text} -> {:ok, text}
@@ -91,6 +88,31 @@ defmodule Nutria.LLM do
   Recipe generation (non-streaming).
   """
   def recipe(inventory_text, notes \\ nil, mode \\ :fast) do
+    prompt = build_recipe_prompt(inventory_text, notes)
+    call_non_streaming(prompt, mode, @recipe_prompt, 0.8)
+  end
+
+  defp call_non_streaming(prompt, mode, system_prompt, temperature) do
+    {provider_mod, model, api_key, fallback_mod, fallback_model, fallback_key} = resolve(mode)
+    messages = [%{"role" => "user", "content" => prompt}]
+    opts = [model: model, api_key: api_key, system_prompt: system_prompt, temperature: temperature]
+
+    case provider_mod.chat(messages, opts) do
+      {:ok, text} ->
+        {:ok, text}
+
+      {:error, _, reason} ->
+        Logger.warning("[LLM] #{mode} recipe provider #{provider_mod} failed: #{reason}, trying fallback")
+        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: system_prompt, temperature: temperature]
+
+        case fallback_mod.chat(messages, fallback_opts) do
+          {:ok, text} -> {:ok, text}
+          {:error, _, fallback_reason} -> {:error, :llm_error, fallback_reason}
+        end
+    end
+  end
+
+  defp build_recipe_prompt(inventory_text, notes) do
     prompt = """
     Itens disponíveis na despensa do usuário:
     #{inventory_text}
@@ -104,29 +126,10 @@ defmodule Nutria.LLM do
     Não consuma mais do que está disponível.
     """
 
-    prompt =
-      if notes && String.trim(notes) != "" do
-        prompt <> "\nObservações: #{notes}"
-      else
-        prompt
-      end
-
-    {provider_mod, model, api_key, fallback_mod, fallback_model, fallback_key} = resolve(mode)
-    messages = [%{"role" => "user", "content" => prompt}]
-    opts = [model: model, api_key: api_key, system_prompt: @recipe_prompt, temperature: 0.8]
-
-    case provider_mod.chat(messages, opts) do
-      {:ok, text} ->
-        {:ok, text}
-
-      {:error, _, reason} ->
-        Logger.warning("[LLM] #{mode} recipe provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @recipe_prompt, temperature: 0.8]
-
-        case fallback_mod.chat(messages, fallback_opts) do
-          {:ok, text} -> {:ok, text}
-          {:error, _, fallback_reason} -> {:error, :llm_error, fallback_reason}
-        end
+    if notes && String.trim(notes) != "" do
+      prompt <> "\nObservações: #{notes}"
+    else
+      prompt
     end
   end
 
