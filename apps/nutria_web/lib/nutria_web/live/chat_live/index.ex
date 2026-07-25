@@ -334,7 +334,7 @@ defmodule NutriaWeb.ChatLive.Index do
             <%= if @streaming_text != "" do %>
               <div class="message assistant">
                 <div class="message-bubble streaming-cursor">
-                  <%= raw(render_markdown(@streaming_text)) %>
+                  <div id="streaming-text" phx-hook="StreamingText" data-text={@streaming_text}></div>
                 </div>
               </div>
             <% end %>
