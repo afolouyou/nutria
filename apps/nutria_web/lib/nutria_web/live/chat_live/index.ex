@@ -199,6 +199,58 @@ defmodule NutriaWeb.ChatLive.Index do
     Conversations.list_conversations(user_id)
   end
 
+  defp render_markdown(text) do
+    text
+    |> escape_html()
+    |> bold()
+    |> list_items()
+    |> line_breaks()
+  end
+
+  defp escape_html(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
+
+  defp bold(text) do
+    Regex.replace(~r/\*\*(.+?)\*\*/, text, "<strong>\\1</strong>")
+  end
+
+  defp list_items(text) do
+    text
+    |> String.split("\n")
+    |> Enum.map(fn line ->
+      cond do
+        String.match?(line, ~r/^- /) ->
+          "<li>#{String.trim_leading(line, "- ")}</li>"
+
+        String.match?(line, ~r/^\d+\. /) ->
+          "<li>#{line}</li>"
+
+        true ->
+          "<p>#{line}</p>"
+      end
+    end)
+    |> Enum.join("")
+    |> then(fn html ->
+      html
+      |> String.replace(~r/<li>(.+?)<\/li><li>/, "<li>\\1</li>\n<li>")
+      |> then(fn h ->
+        if String.contains?(h, "<li>") do
+          "<ul>#{h}</ul>"
+        else
+          h
+        end
+      end)
+    end)
+  end
+
+  defp line_breaks(text) do
+    String.replace(text, "\n\n", "<br><br>")
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -241,7 +293,7 @@ defmodule NutriaWeb.ChatLive.Index do
             </button>
           </div>
           <div class="input-wrapper">
-            <form phx-submit="send_message">
+            <form phx-submit="send_message" class="chat-form">
               <input
                 type="text"
                 name="text"
@@ -250,6 +302,14 @@ defmodule NutriaWeb.ChatLive.Index do
                 disabled={@sending}
                 autocomplete="off"
               />
+              <button
+                type="submit"
+                class="send-btn"
+                disabled={@sending}
+                aria-label="Enviar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              </button>
             </form>
           </div>
         </div>
@@ -259,7 +319,11 @@ defmodule NutriaWeb.ChatLive.Index do
             <%= for msg <- @messages do %>
               <div class={["message", msg["role"]]}>
                 <div class="message-bubble">
-                  <%= msg["text"] %>
+                  <%= if msg["role"] == "assistant" do %>
+                    <%= raw(render_markdown(msg["text"])) %>
+                  <% else %>
+                    <%= msg["text"] %>
+                  <% end %>
                 </div>
               </div>
             <% end %>
@@ -267,7 +331,7 @@ defmodule NutriaWeb.ChatLive.Index do
             <%= if @streaming_text != "" do %>
               <div class="message assistant">
                 <div class="message-bubble streaming-cursor">
-                  <%= @streaming_text %>
+                  <%= raw(render_markdown(@streaming_text)) %>
                 </div>
               </div>
             <% end %>
@@ -304,7 +368,7 @@ defmodule NutriaWeb.ChatLive.Index do
             </button>
           </div>
           <div class="input-wrapper">
-            <form phx-submit="send_message">
+            <form phx-submit="send_message" class="chat-form">
               <input
                 type="text"
                 name="text"
@@ -313,6 +377,14 @@ defmodule NutriaWeb.ChatLive.Index do
                 disabled={@sending}
                 autocomplete="off"
               />
+              <button
+                type="submit"
+                class="send-btn"
+                disabled={@sending}
+                aria-label="Enviar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              </button>
             </form>
           </div>
         </div>
