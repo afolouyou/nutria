@@ -28,7 +28,6 @@ defmodule Nutria.MixProject do
       {:postgrex, "~> 0.19"},
       {:joken, "~> 2.6"},
       {:bcrypt_elixir, "~> 3.0"},
-      {:gemini_ex, "~> 0.14.0"},
       {:req, "~> 0.5"},
       {:jason, "~> 1.4"}
     ]

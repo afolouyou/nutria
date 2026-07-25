@@ -12,9 +12,13 @@ config :nutria, Nutria.Repo,
 config :nutria_web, NutriaWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: 4000],
   check_origin: false,
-  code_reloader: false,
-  debug_errors: false,
+  code_reloader: true,
+  debug_errors: true,
   secret_key_base: "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it-ok",
-  watchers: []
+  watchers: [
+    tailwind: {Tailwind, :install_and_run, [:nutria, ~w(--watch)]}
+  ]
+
+config :nutria_web, :dev_routes, true
 
 config :logger, :console, format: "[$level] $message\n"

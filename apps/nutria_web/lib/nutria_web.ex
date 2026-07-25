@@ -28,7 +28,36 @@ defmodule NutriaWeb do
 
       import Plug.Conn
 
-      unquote(verified_routes())
+      unquote(html_helpers())
+    end
+  end
+
+  def html do
+    quote do
+      use Phoenix.Component,
+        global_prefixes: ~w(phx-)
+
+      import Phoenix.HTML
+      import Phoenix.Component
+
+      unquote(html_helpers())
+    end
+  end
+
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {NutriaWeb.Layouts, :app}
+
+      unquote(html_helpers())
+    end
+  end
+
+  def live_component do
+    quote do
+      use Phoenix.LiveComponent
+
+      unquote(html_helpers())
     end
   end
 
@@ -38,6 +67,14 @@ defmodule NutriaWeb do
         endpoint: NutriaWeb.Endpoint,
         router: NutriaWeb.Router,
         statics: NutriaWeb.static_paths()
+    end
+  end
+
+  defp html_helpers do
+    quote do
+      import Phoenix.HTML
+      import Phoenix.Component
+      unquote(verified_routes())
     end
   end
 

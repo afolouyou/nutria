@@ -3,10 +3,6 @@ import Config
 config :nutria,
   ecto_repos: [Nutria.Repo]
 
-config :nutria, Nutria.Guardian,
-  issuer: "nutria",
-  secret_key: System.get_env("JWT_SECRET", "dev-secret-change-in-production")
-
 config :nutria, Nutria.Repo,
   migration_primary_key: [type: :binary_id],
   migration_foreign_key: [type: :binary_id]
@@ -22,14 +18,24 @@ config :nutria_web, NutriaWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Phoenix.Endpoint.Cowboy2Adapter,
   render_errors: [
-    formats: [json: NutriaWeb.ErrorJSON],
+    formats: [html: NutriaWeb.ErrorHTML, json: NutriaWeb.ErrorJSON],
     layout: false
   ],
   pubsub_server: Nutria.PubSub,
-  live_view: [signing_salt: "nutria"]
+  live_view: [signing_salt: "GMVZPjA0hGN3WgCB"]
 
 config :nutria_web, :generators,
   context_app: :nutria
+
+config :tailwind,
+  version: "4.0.17",
+  nutria: [
+    args: ~w(
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../apps/nutria_web/assets", __DIR__)
+  ]
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

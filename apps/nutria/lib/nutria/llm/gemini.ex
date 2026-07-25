@@ -1,6 +1,6 @@
 defmodule Nutria.LLM.Gemini do
   @moduledoc """
-  Wrapper around gemini_ex for LLM interactions.
+  Wrapper for Gemini LLM interactions via REST API.
   """
   require Logger
 
