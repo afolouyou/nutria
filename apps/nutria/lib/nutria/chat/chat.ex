@@ -3,9 +3,8 @@ defmodule Nutria.Chat do
   Chat context — orchestrates message sending, history, and LLM.
   """
   alias Nutria.Conversations
-  alias Nutria.LLM.Gemini
 
-  def send_message(user_id, text, conversation_id \\ nil) do
+  def send_message(user_id, text, conversation_id \\ nil, mode \\ :fast) do
     text = text |> to_string() |> String.trim()
 
     if text == "" do
@@ -15,7 +14,7 @@ defmodule Nutria.Chat do
         {:ok, user_msg} = Conversations.add_message(conv_id, "user", text)
         prior = Conversations.get_prior_messages(conv_id, user_msg.id)
 
-        case Gemini.chat(text, prior) do
+        case Nutria.LLM.chat(text, prior, mode) do
           {:ok, assistant_text} ->
             {:ok, assistant_msg} = Conversations.add_message(conv_id, "assistant", assistant_text)
             Conversations.update_conversation_timestamp(conv_id)

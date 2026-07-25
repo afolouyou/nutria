@@ -1,6 +1,6 @@
 defmodule NutriaWeb.ChatLive.Index do
   @moduledoc """
-  Main chat interface with message streaming.
+  Main chat interface with multi-provider streaming.
   """
   use NutriaWeb, :live_view
 
@@ -25,7 +25,8 @@ defmodule NutriaWeb.ChatLive.Index do
      |> assign(:current_conversation_id, nil)
      |> assign(:sending, false)
      |> assign(:streaming_text, "")
-     |> assign(:suggestions, @suggestions)}
+     |> assign(:suggestions, @suggestions)
+     |> assign(:llm_mode, :fast)}
   end
 
   @impl true
@@ -73,10 +74,11 @@ defmodule NutriaWeb.ChatLive.Index do
 
       if user do
         conv_id = socket.assigns.current_conversation_id
+        mode = socket.assigns.llm_mode
 
         task =
           Task.async(fn ->
-            send_message_and_stream(user.id, text, conv_id, self())
+            send_message_and_stream(user.id, text, conv_id, mode, self())
           end)
 
         {:noreply,
@@ -93,6 +95,11 @@ defmodule NutriaWeb.ChatLive.Index do
 
   def handle_event("suggestion_click", %{"text" => text}, socket) do
     handle_event("send_message", %{"text" => text}, socket)
+  end
+
+  def handle_event("toggle_mode", _params, socket) do
+    new_mode = if socket.assigns.llm_mode == :fast, do: :smart, else: :fast
+    {:noreply, assign(socket, :llm_mode, new_mode)}
   end
 
   def handle_event("new_chat", _params, socket) do
@@ -115,7 +122,6 @@ defmodule NutriaWeb.ChatLive.Index do
     user = socket.assigns.current_user
     conv_id = socket.assigns[:new_conv_id] || socket.assigns.current_conversation_id
 
-    # Save the complete assistant message to DB
     {:ok, _msg} = Conversations.add_message(conv_id, "assistant", full_text)
 
     conversations = if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
@@ -150,8 +156,7 @@ defmodule NutriaWeb.ChatLive.Index do
     {:noreply, socket}
   end
 
-  defp send_message_and_stream(user_id, text, conv_id, parent_pid) do
-    # Get or create conversation
+  defp send_message_and_stream(user_id, text, conv_id, mode, parent_pid) do
     conv_id =
       if conv_id && conv_id != "" do
         case Nutria.Repo.get(Nutria.Conversations.Conversation, conv_id) do
@@ -169,7 +174,6 @@ defmodule NutriaWeb.ChatLive.Index do
           conv.id
       end
 
-    # Save user message
     {:ok, user_msg} = Conversations.add_message(conv_id, "user", text)
     user_msg_map = %{
       "id" => user_msg.id,
@@ -179,73 +183,16 @@ defmodule NutriaWeb.ChatLive.Index do
     }
     send(parent_pid, {:msg_saved, conv_id, user_msg_map})
 
-    # Get prior messages for context
     prior = Conversations.get_prior_messages(conv_id, user_msg.id)
 
-    # Stream response from Gemini
-    config = Application.get_env(:nutria, :gemini)
-    api_key = config[:api_key]
-    model = config[:model] || "gemini-3-flash-preview"
+    case Nutria.LLM.chat_stream(text, prior, parent_pid, mode) do
+      :ok ->
+        # Stream done is sent by the provider via the caller_pid messages
+        :ok
 
-    messages = build_chat_messages(text, prior)
-
-    request = %{
-      contents: messages,
-      system_instruction: %{parts: [%{text: system_prompt()}]},
-      generation_config: %{temperature: 0.7}
-    }
-
-    url = "https://generativelanguage.googleapis.com/v1beta/models/#{model}:streamGenerateContent?alt=sse"
-
-    case stream_gemini(url, api_key, request, parent_pid) do
-      {:ok, full_text} ->
-        send(parent_pid, {:stream_done, full_text})
-        Conversations.update_conversation_timestamp(conv_id)
-
-      {:error, reason} ->
+      {:error, _, reason} ->
         send(parent_pid, {make_ref(), {:error, reason}})
     end
-  end
-
-  defp stream_gemini(url, api_key, request, _parent_pid) do
-    # Use a simple approach: make the request and parse response
-    case Req.post(url, json: request, headers: [{"x-goog-api-key", api_key}]) do
-      {:ok, %Req.Response{status: 200, body: %{"candidates" => [%{"content" => %{"parts" => parts}} | _]}}} ->
-        full_text = parts |> Enum.map(& &1["text"]) |> Enum.join("")
-        {:ok, full_text}
-
-      {:ok, %Req.Response{status: 200, body: _body}} ->
-        {:error, "Resposta inválida da IA"}
-
-      {:ok, %Req.Response{status: status}} ->
-        {:error, "Erro ao consultar IA (#{status})"}
-
-      {:error, _reason} ->
-        {:error, "Erro de conexão com IA"}
-    end
-  end
-
-  defp build_chat_messages(text, prior_messages) do
-    prior =
-      prior_messages
-      |> Enum.map(fn msg ->
-        prefix = if msg.role == "user", do: "Usuário", else: "NutrIA"
-        "#{prefix}: #{msg.text}"
-      end)
-
-    combined =
-      if prior != [] do
-        history = Enum.join(prior, "\n")
-        "Histórico da conversa:\n#{history}\nNova mensagem do usuário: #{text}"
-      else
-        text
-      end
-
-    [%{role: "user", parts: [%{text: combined}]}]
-  end
-
-  defp system_prompt do
-    "Você é o NutrIA, um assistente nutricional simpático, motivador e especialista em nutrição saudável. Responda sempre em português brasileiro de forma clara e objetiva. Você ajuda os usuários com: análise nutricional de refeições, dicas de alimentação saudável, criação de planos alimentares personalizados e sugestões para o dia a dia. Use emojis com moderação para tornar as respostas amigáveis. Quando relevante, organize a resposta em tópicos."
   end
 
   defp refresh_conversations(user_id) do
@@ -275,6 +222,24 @@ defmodule NutriaWeb.ChatLive.Index do
         </div>
 
         <div class="input-area">
+          <div class="mode-toggle-bar">
+            <button
+              type="button"
+              class={["mode-btn", @llm_mode == :fast && "active"]}
+              phx-click="toggle_mode"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Rápido
+            </button>
+            <button
+              type="button"
+              class={["mode-btn", @llm_mode == :smart && "active"]}
+              phx-click="toggle_mode"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"/><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"/></svg>
+              Esperto
+            </button>
+          </div>
           <div class="input-wrapper">
             <form phx-submit="send_message">
               <input
@@ -320,6 +285,24 @@ defmodule NutriaWeb.ChatLive.Index do
         </div>
 
         <div class="input-area">
+          <div class="mode-toggle-bar">
+            <button
+              type="button"
+              class={["mode-btn", @llm_mode == :fast && "active"]}
+              phx-click="toggle_mode"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Rápido
+            </button>
+            <button
+              type="button"
+              class={["mode-btn", @llm_mode == :smart && "active"]}
+              phx-click="toggle_mode"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"/><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"/></svg>
+              Esperto
+            </button>
+          </div>
           <div class="input-wrapper">
             <form phx-submit="send_message">
               <input

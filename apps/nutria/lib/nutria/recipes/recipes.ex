@@ -5,9 +5,8 @@ defmodule Nutria.Recipes do
   require Logger
   alias Nutria.Pantry
   alias Nutria.Pantry.PantryItem
-  alias Nutria.LLM.Gemini
 
-  def generate_from_pantry(user_id, notes \\ nil) do
+  def generate_from_pantry(user_id, notes \\ nil, mode \\ :fast) do
     items = Pantry.get_all_items_for_user(user_id)
 
     if items == [] do
@@ -18,7 +17,7 @@ defmodule Nutria.Recipes do
         |> Enum.map(fn i -> "- #{i.name}: #{i.quantity} #{i.unit}" end)
         |> Enum.join("\n")
 
-      case Gemini.recipe(inventory_text, notes) do
+      case Nutria.LLM.recipe(inventory_text, notes, mode) do
         {:ok, raw_text} ->
           {cleaned_text, consumed, low_stock} = parse_and_deduct(raw_text, items)
 

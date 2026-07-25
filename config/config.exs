@@ -10,9 +10,13 @@ config :nutria, Nutria.Repo,
 config :joken,
   default_signer: System.get_env("JWT_SECRET", "dev-secret-change-in-production")
 
-config :nutria, :gemini,
-  api_key: System.get_env("EMERGENT_LLM_KEY"),
-  model: "gemini-3-flash-preview"
+config :nutria, :llm,
+  google_api_key: System.get_env("GOOGLE_AI_KEY"),
+  zen_api_key: System.get_env("ZEN_API_KEY"),
+  fast_provider: :google,
+  fast_model: "gemma-4-31b-it",
+  smart_provider: :zen,
+  smart_model: "deepseek-v4-flash-free"
 
 config :nutria_web, NutriaWeb.Endpoint,
   url: [host: "localhost"],

@@ -403,6 +403,44 @@ img, svg { display: block; }
   padding: 16px 24px 24px;
 }
 
+.mode-toggle-bar {
+  max-width: 720px;
+  margin: 0 auto 8px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 16px;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: #2d6a4f;
+  color: #2d6a4f;
+}
+
+.mode-btn.active {
+  background: #2d6a4f;
+  color: #fff;
+  border-color: #2d6a4f;
+}
+
+.mode-btn svg {
+  flex-shrink: 0;
+}
+
 .input-wrapper {
   max-width: 720px;
   margin: 0 auto;
