@@ -155,6 +155,11 @@ defmodule NutriaWeb.ChatLive.Index do
     {:noreply, assign(socket, :current_conversation_id, conv_id)}
   end
 
+  def handle_info({ref, _result}, socket) when is_reference(ref) do
+    Process.demonitor(ref, [:flush])
+    {:noreply, socket}
+  end
+
   def handle_info({ref, {:error, message}}, socket) when is_reference(ref) do
     Process.demonitor(ref, [:flush])
 
