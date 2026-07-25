@@ -75,18 +75,27 @@ defmodule NutriaWeb.ChatLive.Index do
       if user do
         conv_id = socket.assigns.current_conversation_id
         mode = socket.assigns.llm_mode
+        lv_pid = self()
 
         task =
           Task.async(fn ->
-            send_message_and_stream(user.id, text, conv_id, mode, self())
+            send_message_and_stream(user.id, text, conv_id, mode, lv_pid)
           end)
+
+        user_msg = %{
+          "id" => Ecto.UUID.generate(),
+          "role" => "user",
+          "text" => text,
+          "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+        }
 
         {:noreply,
          socket
          |> assign(:sending, true)
          |> assign(:streaming_text, "")
          |> assign(:streaming_task, task)
-         |> assign(:new_conv_id, nil)}
+         |> assign(:new_conv_id, nil)
+         |> update(:messages, &(&1 ++ [user_msg]))}
       else
         {:noreply, redirect(socket, to: ~p"/login")}
       end
@@ -135,11 +144,8 @@ defmodule NutriaWeb.ChatLive.Index do
      |> assign(:conversations, conversations)}
   end
 
-  def handle_info({:msg_saved, conv_id, user_msg}, socket) do
-    {:noreply,
-     socket
-     |> assign(:current_conversation_id, conv_id)
-     |> assign(:messages, socket.assigns.messages ++ [user_msg])}
+  def handle_info({:conv_created, conv_id}, socket) do
+    {:noreply, assign(socket, :current_conversation_id, conv_id)}
   end
 
   def handle_info({ref, {:error, message}}, socket) when is_reference(ref) do
@@ -156,7 +162,7 @@ defmodule NutriaWeb.ChatLive.Index do
     {:noreply, socket}
   end
 
-  defp send_message_and_stream(user_id, text, conv_id, mode, parent_pid) do
+  defp send_message_and_stream(user_id, text, conv_id, mode, lv_pid) do
     conv_id =
       if conv_id && conv_id != "" do
         case Nutria.Repo.get(Nutria.Conversations.Conversation, conv_id) do
@@ -165,33 +171,23 @@ defmodule NutriaWeb.ChatLive.Index do
         end
       end
 
-    conv_id =
+    {conv_id, is_new} =
       cond do
-        conv_id -> conv_id
+        conv_id -> {conv_id, false}
         true ->
           title = if String.length(text) > 50, do: String.slice(text, 0, 50) <> "...", else: text
           {:ok, conv} = Conversations.create_conversation(user_id, title)
-          conv.id
+          {conv.id, true}
       end
 
-    {:ok, user_msg} = Conversations.add_message(conv_id, "user", text)
-    user_msg_map = %{
-      "id" => user_msg.id,
-      "role" => "user",
-      "text" => user_msg.text,
-      "created_at" => DateTime.from_naive!(user_msg.inserted_at, "Etc/UTC") |> DateTime.to_iso8601()
-    }
-    send(parent_pid, {:msg_saved, conv_id, user_msg_map})
+    if is_new, do: send(lv_pid, {:conv_created, conv_id})
 
+    {:ok, user_msg} = Conversations.add_message(conv_id, "user", text)
     prior = Conversations.get_prior_messages(conv_id, user_msg.id)
 
-    case Nutria.LLM.chat_stream(text, prior, parent_pid, mode) do
-      :ok ->
-        # Stream done is sent by the provider via the caller_pid messages
-        :ok
-
-      {:error, _, reason} ->
-        send(parent_pid, {make_ref(), {:error, reason}})
+    case Nutria.LLM.chat_stream(text, prior, lv_pid, mode) do
+      :ok -> :ok
+      {:error, _, reason} -> send(lv_pid, {make_ref(), {:error, reason}})
     end
   end
 
