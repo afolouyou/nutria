@@ -127,11 +127,14 @@ defmodule NutriaWeb.ChatLive.Index do
     {:noreply, update(socket, :streaming_text, &(&1 <> text))}
   end
 
-  def handle_info({:stream_done, full_text}, socket) do
+  def handle_info({:stream_done, _full_text}, socket) do
     user = socket.assigns.current_user
-    conv_id = socket.assigns[:new_conv_id] || socket.assigns.current_conversation_id
+    conv_id = socket.assigns.current_conversation_id
+    full_text = socket.assigns.streaming_text
 
-    {:ok, _msg} = Conversations.add_message(conv_id, "assistant", full_text)
+    if full_text != "" do
+      {:ok, _msg} = Conversations.add_message(conv_id, "assistant", full_text)
+    end
 
     conversations = if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
 
@@ -139,8 +142,12 @@ defmodule NutriaWeb.ChatLive.Index do
      socket
      |> assign(:sending, false)
      |> assign(:streaming_text, "")
-     |> assign(:current_conversation_id, conv_id)
-     |> assign(:messages, socket.assigns.messages ++ [%{"id" => Ecto.UUID.generate(), "role" => "assistant", "text" => full_text, "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()}])
+     |> assign(:messages, socket.assigns.messages ++ [%{
+       "id" => Ecto.UUID.generate(),
+       "role" => "assistant",
+       "text" => full_text,
+       "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+     }])
      |> assign(:conversations, conversations)}
   end
 
