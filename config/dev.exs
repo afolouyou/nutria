@@ -14,7 +14,8 @@ config :nutria_web, NutriaWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it-ok",
+  secret_key_base:
+    "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it-ok",
   watchers: [
     tailwind: {Tailwind, :install_and_run, [:nutria, ~w(--watch)]}
   ]

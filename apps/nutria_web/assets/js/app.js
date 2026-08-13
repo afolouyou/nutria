@@ -54,8 +54,19 @@ Hooks.StreamingText = {
 
 Hooks.ThemeToggle = {
   mounted() {
+    this.updateState()
     this.el.addEventListener("click", () => {
-      this.pushEvent("toggle_theme", {})
+      const html = document.documentElement
+      const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark"
+      html.setAttribute("data-theme", next)
+      try { localStorage.setItem("nutria_theme", next) } catch (e) {}
+      this.updateState()
+    })
+  },
+  updateState() {
+    const dark = document.documentElement.getAttribute("data-theme") === "dark"
+    this.el.querySelectorAll(".settings-theme-state").forEach(function(state) {
+      state.textContent = dark ? "Ativado" : "Desativado"
     })
   }
 }

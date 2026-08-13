@@ -6,18 +6,19 @@ defmodule Nutria.Accounts.User do
   @foreign_key_type :binary_id
 
   schema "users" do
-    field :email, :string
-    field :name, :string
-    field :password_hash, :string
-    field :provider, :string, default: "email"
-    field :password, :string, virtual: true, redact: true
+    field(:email, :string)
+    field(:name, :string)
+    field(:password_hash, :string)
+    field(:provider, :string, default: "email")
+    field(:avatar, :string)
+    field(:password, :string, virtual: true, redact: true)
 
     timestamps()
   end
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :name, :password, :provider])
+    |> cast(attrs, [:email, :name, :password, :provider, :avatar])
     |> validate_required([:email, :name, :provider])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> unique_constraint(:email)

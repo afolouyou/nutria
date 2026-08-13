@@ -4,8 +4,8 @@ defmodule NutriaWeb.CoreComponents do
   """
   use Phoenix.Component
 
-  attr :flash, :map, required: true
-  attr :kind, :atom, required: true
+  attr(:flash, :map, required: true)
+  attr(:kind, :atom, required: true)
 
   def flash(assigns) do
     ~H"""
@@ -25,7 +25,7 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  attr :flash, :map, required: true
+  attr(:flash, :map, required: true)
 
   def flash_group(assigns) do
     ~H"""
@@ -36,9 +36,9 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  slot :inner_block, required: true
-  attr :class, :string, default: nil
-  attr :rest, :global
+  slot(:inner_block, required: true)
+  attr(:class, :string, default: nil)
+  attr(:rest, :global)
 
   def button(assigns) do
     ~H"""
@@ -56,9 +56,9 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  slot :inner_block, required: true
-  attr :class, :string, default: nil
-  attr :rest, :global
+  slot(:inner_block, required: true)
+  attr(:class, :string, default: nil)
+  attr(:rest, :global)
 
   def button_outline(assigns) do
     ~H"""
@@ -76,9 +76,9 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  slot :inner_block, required: true
-  attr :class, :string, default: nil
-  attr :rest, :global
+  slot(:inner_block, required: true)
+  attr(:class, :string, default: nil)
+  attr(:rest, :global)
 
   def button_accent(assigns) do
     ~H"""
@@ -96,11 +96,11 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  attr :label, :string, required: true
-  attr :field, Phoenix.HTML.FormField
-  attr :type, :string, default: "text"
-  attr :placeholder, :string, default: nil
-  attr :rest, :global, include: ~w(autocomplete disabled readonly value min max step)
+  attr(:label, :string, required: true)
+  attr(:field, Phoenix.HTML.FormField)
+  attr(:type, :string, default: "text")
+  attr(:placeholder, :string, default: nil)
+  attr(:rest, :global, include: ~w(autocomplete disabled readonly value min max step))
 
   def input(assigns) do
     ~H"""
@@ -129,8 +129,8 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  slot :inner_block, required: true
-  attr :rest, :global
+  slot(:inner_block, required: true)
+  attr(:rest, :global)
 
   def card(assigns) do
     ~H"""
@@ -140,8 +140,8 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  attr :label, :string, required: true
-  attr :class, :string, default: nil
+  attr(:label, :string, required: true)
+  attr(:class, :string, default: nil)
 
   def badge(assigns) do
     ~H"""
@@ -154,8 +154,8 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  attr :text, :string, required: true
-  attr :phx_click, :string, default: nil
+  attr(:text, :string, required: true)
+  attr(:phx_click, :string, default: nil)
 
   def suggestion_card(assigns) do
     ~H"""
@@ -169,8 +169,8 @@ defmodule NutriaWeb.CoreComponents do
     """
   end
 
-  slot :inner_block, required: true
-  attr :class, :string, default: nil
+  slot(:inner_block, required: true)
+  attr(:class, :string, default: nil)
 
   def page_header(assigns) do
     ~H"""

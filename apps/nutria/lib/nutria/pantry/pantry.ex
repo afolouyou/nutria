@@ -20,11 +20,9 @@ defmodule Nutria.Pantry do
     changeset = PantryItem.changeset(%PantryItem{}, Map.put(attrs, "user_id", user_id))
 
     if changeset.valid? do
-      name_norm =
-        Ecto.Changeset.get_field(changeset, :name_norm) ||
-          (attrs["name"] |> to_string() |> String.trim() |> String.downcase())
-
-      unit = attrs["unit"] |> to_string() |> String.downcase()
+      name_norm = Ecto.Changeset.get_field(changeset, :name_norm)
+      unit = Ecto.Changeset.get_field(changeset, :unit)
+      quantity = Ecto.Changeset.get_field(changeset, :quantity)
 
       case Repo.get_by(PantryItem, user_id: user_id, name_norm: name_norm, unit: unit) do
         nil ->
@@ -34,10 +32,8 @@ defmodule Nutria.Pantry do
           end
 
         existing ->
-          new_qty = existing.quantity + (attrs["quantity"] |> to_string() |> String.to_float())
-
           existing
-          |> PantryItem.changeset(%{"quantity" => new_qty})
+          |> PantryItem.changeset(%{"quantity" => existing.quantity + quantity})
           |> Repo.update()
           |> case do
             {:ok, updated} -> {:ok, item_to_map(updated)}
@@ -56,8 +52,12 @@ defmodule Nutria.Pantry do
 
   def delete_item(item_id, user_id) do
     case Repo.get_by(PantryItem, id: item_id, user_id: user_id) do
-      nil -> {:error, :not_found, "Item não encontrado"}
-      item -> Repo.delete(item); :ok
+      nil ->
+        {:error, :not_found, "Item não encontrado"}
+
+      item ->
+        Repo.delete(item)
+        :ok
     end
   end
 
@@ -69,7 +69,8 @@ defmodule Nutria.Pantry do
 
   def update_quantity(item_id, new_quantity) do
     case Repo.get(PantryItem, item_id) do
-      nil -> nil
+      nil ->
+        nil
 
       item ->
         if new_quantity <= 0 do

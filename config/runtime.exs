@@ -1,10 +1,21 @@
 import Config
 
-config :nutria, Nutria.Repo,
-  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
+config :nutria, Nutria.Repo, pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
-config :joken,
-  default_signer: System.get_env("JWT_SECRET", "dev-secret-change-in-production")
+jwt_secret =
+  case System.get_env("JWT_SECRET") do
+    nil ->
+      if config_env() == :prod do
+        raise "JWT_SECRET deve ser definida em produção"
+      else
+        "dev-secret-change-in-production"
+      end
+
+    secret ->
+      secret
+  end
+
+config :joken, default_signer: jwt_secret
 
 config :nutria, :llm,
   google_api_key: System.get_env("GOOGLE_AI_KEY"),

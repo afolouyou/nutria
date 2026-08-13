@@ -9,11 +9,11 @@ defmodule Nutria.Pantry.PantryItem do
   @low_stock_thresholds %{"g" => 200, "kg" => 0.2, "ml" => 200, "l" => 0.2, "un" => 2}
 
   schema "pantry_items" do
-    field :name, :string
-    field :name_norm, :string
-    field :quantity, :float
-    field :unit, :string
-    belongs_to :user, Nutria.Accounts.User
+    field(:name, :string)
+    field(:name_norm, :string)
+    field(:quantity, :float)
+    field(:unit, :string)
+    belongs_to(:user, Nutria.Accounts.User)
 
     timestamps(updated_at: false)
   end

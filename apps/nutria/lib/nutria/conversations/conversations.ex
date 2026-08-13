@@ -34,8 +34,10 @@ defmodule Nutria.Conversations do
          %{
            "id" => conv.id,
            "title" => conv.title,
-           "created_at" => DateTime.from_naive!(conv.inserted_at, "Etc/UTC") |> DateTime.to_iso8601(),
-           "updated_at" => DateTime.from_naive!(conv.updated_at, "Etc/UTC") |> DateTime.to_iso8601(),
+           "created_at" =>
+             DateTime.from_naive!(conv.inserted_at, "Etc/UTC") |> DateTime.to_iso8601(),
+           "updated_at" =>
+             DateTime.from_naive!(conv.updated_at, "Etc/UTC") |> DateTime.to_iso8601(),
            "messages" => messages
          }}
     end

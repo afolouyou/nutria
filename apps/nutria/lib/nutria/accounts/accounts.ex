@@ -85,6 +85,12 @@ defmodule Nutria.Accounts do
 
   def get_user!(id), do: Repo.get!(User, id)
 
+  def update_avatar(user, filename) do
+    user
+    |> User.changeset(%{avatar: filename})
+    |> Repo.update()
+  end
+
   def user_to_map(%User{} = user) do
     %{
       "id" => user.id,

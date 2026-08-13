@@ -4,7 +4,7 @@ defmodule NutriaWeb.ChatLive.Index do
   """
   use NutriaWeb, :live_view
 
-  on_mount {NutriaWeb.Live.AuthHelpers, :require_user}
+  on_mount({NutriaWeb.Live.AuthHelpers, :require_user})
 
   import NutriaWeb.CoreComponents
 
@@ -24,12 +24,12 @@ defmodule NutriaWeb.ChatLive.Index do
      |> assign(:messages, [])
      |> assign(:current_conversation_id, nil)
      |> assign(:sending, false)
-      |> assign(:streaming_text, "")
-      |> assign(:streaming_buffer, "")
-      |> assign(:stream_complete, false)
-      |> assign(:thinking_title, "")
-      |> assign(:suggestions, @suggestions)
-      |> assign(:llm_mode, :fast)}
+     |> assign(:streaming_text, "")
+     |> assign(:streaming_buffer, "")
+     |> assign(:stream_complete, false)
+     |> assign(:thinking_title, "")
+     |> assign(:suggestions, @suggestions)
+     |> assign(:llm_mode, :fast)}
   end
 
   @impl true
@@ -161,7 +161,8 @@ defmodule NutriaWeb.ChatLive.Index do
 
       buffer ->
         {char, rest} = String.split_at(buffer, 1)
-    Process.send_after(self(), :stream_tick, 5)
+        Process.send_after(self(), :stream_tick, 5)
+
         {:noreply,
          socket
          |> assign(:streaming_buffer, rest)
@@ -177,6 +178,13 @@ defmodule NutriaWeb.ChatLive.Index do
 
   def handle_info({:conv_created, conv_id}, socket) do
     {:noreply, assign(socket, :current_conversation_id, conv_id)}
+  end
+
+  def handle_info({:settings_avatar_updated, user, kind, message}, socket) do
+    {:noreply,
+     socket
+     |> assign(:current_user, user)
+     |> put_flash(kind, message)}
   end
 
   def handle_info({ref, {:error, message}}, socket) when is_reference(ref) do
@@ -217,7 +225,9 @@ defmodule NutriaWeb.ChatLive.Index do
 
     {conv_id, is_new} =
       cond do
-        conv_id -> {conv_id, false}
+        conv_id ->
+          {conv_id, false}
+
         true ->
           title = if String.length(text) > 50, do: String.slice(text, 0, 50) <> "...", else: text
           {:ok, conv} = Conversations.create_conversation(user_id, title)
@@ -248,7 +258,9 @@ defmodule NutriaWeb.ChatLive.Index do
     end
 
     user = socket.assigns.current_user
-    conversations = if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
+
+    conversations =
+      if user, do: refresh_conversations(user.id), else: socket.assigns.conversations
 
     if full_text == "" do
       {:noreply,
@@ -266,12 +278,18 @@ defmodule NutriaWeb.ChatLive.Index do
        |> assign(:streaming_buffer, "")
        |> assign(:stream_complete, false)
        |> assign(:thinking_title, "")
-       |> assign(:messages, socket.assigns.messages ++ [%{
-         "id" => Ecto.UUID.generate(),
-         "role" => "assistant",
-         "text" => full_text,
-         "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-       }])
+       |> assign(
+         :messages,
+         socket.assigns.messages ++
+           [
+             %{
+               "id" => Ecto.UUID.generate(),
+               "role" => "assistant",
+               "text" => full_text,
+               "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+             }
+           ]
+       )
        |> assign(:conversations, conversations)}
     end
   end
@@ -311,6 +329,7 @@ defmodule NutriaWeb.ChatLive.Index do
           |> Enum.filter(&String.match?(&1, ~r/^[-*] /))
           |> Enum.map(fn line -> "<li>#{String.trim_leading(line, "- ")}</li>" end)
           |> Enum.join("")
+
         "<ul>#{items}</ul>"
 
       Enum.any?(lines, &String.match?(&1, ~r/^\d+\. /)) ->
@@ -322,6 +341,7 @@ defmodule NutriaWeb.ChatLive.Index do
             "<li>#{text}</li>"
           end)
           |> Enum.join("")
+
         "<ul>#{items}</ul>"
 
       true ->

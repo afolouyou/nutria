@@ -1,10 +1,10 @@
-defmodule NutriaWeb.HistoryLive.Index do
+defmodule NutriaMobile.HistoryLive.Index do
   @moduledoc """
   Conversation history list.
   """
   use NutriaWeb, :live_view
 
-  on_mount {NutriaWeb.Live.AuthHelpers, :require_user}
+  on_mount({NutriaWeb.Live.AuthHelpers, :require_user})
 
   alias Nutria.Conversations
 
@@ -72,11 +72,6 @@ defmodule NutriaWeb.HistoryLive.Index do
     ~H"""
     <div class="flex flex-col h-full">
       <header class="px-6 py-4 border-b border-[#e9ecef] flex items-center gap-3">
-        <.link navigate={~p"/settings"} class="p-1.5 hover:bg-[#eee] rounded-md transition-colors">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </.link>
         <h1 class="font-semibold text-base">Histórico de Conversas</h1>
       </header>
 

@@ -10,6 +10,11 @@ config :nutria, Nutria.Repo,
 config :joken,
   default_signer: System.get_env("JWT_SECRET", "dev-secret-change-in-production")
 
+config :nutria, :google_oauth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET"),
+  redirect_uri: System.get_env("GOOGLE_REDIRECT_URI", "http://localhost:4000/auth/google/callback")
+
 config :nutria, :llm,
   google_api_key: System.get_env("GOOGLE_AI_KEY"),
   zen_api_key: System.get_env("ZEN_API_KEY"),
@@ -28,8 +33,7 @@ config :nutria_web, NutriaWeb.Endpoint,
   pubsub_server: Nutria.PubSub,
   live_view: [signing_salt: "GMVZPjA0hGN3WgCB"]
 
-config :nutria_web, :generators,
-  context_app: :nutria
+config :nutria_web, :generators, context_app: :nutria
 
 config :tailwind,
   version: "4.0.17",

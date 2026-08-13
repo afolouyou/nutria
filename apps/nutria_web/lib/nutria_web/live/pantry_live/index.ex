@@ -4,7 +4,7 @@ defmodule NutriaWeb.PantryLive.Index do
   """
   use NutriaWeb, :live_view
 
-  on_mount {NutriaWeb.Live.AuthHelpers, :require_user}
+  on_mount({NutriaWeb.Live.AuthHelpers, :require_user})
 
   alias Nutria.Pantry
   alias Nutria.Recipes
@@ -134,13 +134,12 @@ defmodule NutriaWeb.PantryLive.Index do
     <div class="flex flex-col h-full">
       <header class="px-6 py-4 border-b border-[#e9ecef]">
         <h1 class="font-semibold text-base">Minha Despensa</h1>
-        <p class="text-xs text-[#888] mt-0.5">Cadastre seus alimentos. A IA gera receitas e atualiza o estoque automaticamente.</p>
       </header>
 
       <div class="flex-1 overflow-y-auto px-6 py-6">
         <div class="max-w-[720px] mx-auto space-y-6">
           <!-- Add Item Form -->
-          <div class="bg-white border border-[#dee2e6] rounded-xl p-4">
+          <div class="bg-[#f0f0f0] border border-[#dee2e6] rounded-xl p-4">
             <h2 class="text-sm font-semibold text-[#333] mb-3">Adicionar item</h2>
             <form phx-submit="add_item" class="space-y-3">
               <input
@@ -184,7 +183,8 @@ defmodule NutriaWeb.PantryLive.Index do
               <button
                 type="submit"
                 disabled={@adding or @name == "" or @qty == ""}
-                class="w-full py-2.5 bg-[#2d6a4f] text-white rounded-lg text-sm font-medium hover:bg-[#1b4332] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                class="w-full py-2.5 bg-[#2d6a4f] text-white rounded-lg text-sm font-medium hover:bg-[#1b4332] transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style="background-color: #2d6a4f"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
                   <circle cx="12" cy="12" r="10"/>
@@ -202,15 +202,23 @@ defmodule NutriaWeb.PantryLive.Index do
             </h2>
 
             <%= if @items == [] do %>
-              <p class="text-sm text-[#888] italic py-4">Despensa vazia.</p>
+              <div class="flex flex-col items-center py-12 text-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-14 h-14 text-[#ccc] mb-3">
+                  <path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                <p class="text-[#888] text-sm">Despensa vazia</p>
+                <p class="text-[#aaa] text-xs mt-1">Adicione itens acima para começar.</p>
+              </div>
             <% else %>
               <div class="space-y-1.5">
                 <%= for item <- @items do %>
                   <div class={[
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors",
+                    "flex items-center gap-3 px-3 py-3 rounded-xl border transition-colors group",
                     if(item["low_stock"],
                       do: "border-[#fc7100] bg-[#fff8f0]",
-                      else: "border-[#dee2e6] bg-white"
+                      else: "border-[#dee2e6] bg-white hover:border-[#2d6a4f]"
                     )
                   ]}>
                     <div class="flex-1 min-w-0">
@@ -230,7 +238,7 @@ defmodule NutriaWeb.PantryLive.Index do
                     <button
                       phx-click="delete_item"
                       phx-value-id={item["id"]}
-                      class="p-1.5 text-[#888] hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      class="p-1.5 text-[#888] hover:text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
                         <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -259,7 +267,8 @@ defmodule NutriaWeb.PantryLive.Index do
           <button
             phx-click="generate_recipe"
             disabled={@loading or @items == []}
-            class="w-full py-3 bg-[#fc7100] text-white rounded-xl text-sm font-medium hover:bg-[#e06500] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            class="w-full py-2.5 bg-[#fc7100] text-white rounded-lg text-sm font-medium hover:bg-[#e06500] transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style="background-color: #fc7100"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
               <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>

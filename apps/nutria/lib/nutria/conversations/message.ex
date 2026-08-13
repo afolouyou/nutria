@@ -6,9 +6,9 @@ defmodule Nutria.Conversations.Message do
   @foreign_key_type :binary_id
 
   schema "messages" do
-    field :role, :string
-    field :text, :string
-    belongs_to :conversation, Nutria.Conversations.Conversation
+    field(:role, :string)
+    field(:text, :string)
+    belongs_to(:conversation, Nutria.Conversations.Conversation)
 
     timestamps(updated_at: false)
   end

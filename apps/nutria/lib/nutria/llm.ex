@@ -51,8 +51,16 @@ defmodule Nutria.LLM do
         :ok
 
       {:error, _, reason} ->
-        Logger.warning("[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.3]
+        Logger.warning(
+          "[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback"
+        )
+
+        fallback_opts = [
+          model: fallback_model,
+          api_key: fallback_key,
+          system_prompt: @system_prompt,
+          temperature: 0.3
+        ]
 
         case fallback_mod.chat_stream(messages, caller_pid, fallback_opts) do
           :ok -> :ok
@@ -74,8 +82,16 @@ defmodule Nutria.LLM do
         {:ok, text}
 
       {:error, _, reason} ->
-        Logger.warning("[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: @system_prompt, temperature: 0.3]
+        Logger.warning(
+          "[LLM] #{mode} provider #{provider_mod} failed: #{reason}, trying fallback"
+        )
+
+        fallback_opts = [
+          model: fallback_model,
+          api_key: fallback_key,
+          system_prompt: @system_prompt,
+          temperature: 0.3
+        ]
 
         case fallback_mod.chat(messages, fallback_opts) do
           {:ok, text} -> {:ok, text}
@@ -95,15 +111,29 @@ defmodule Nutria.LLM do
   defp call_non_streaming(prompt, mode, system_prompt, temperature) do
     {provider_mod, model, api_key, fallback_mod, fallback_model, fallback_key} = resolve(mode)
     messages = [%{"role" => "user", "content" => prompt}]
-    opts = [model: model, api_key: api_key, system_prompt: system_prompt, temperature: temperature]
+
+    opts = [
+      model: model,
+      api_key: api_key,
+      system_prompt: system_prompt,
+      temperature: temperature
+    ]
 
     case provider_mod.chat(messages, opts) do
       {:ok, text} ->
         {:ok, text}
 
       {:error, _, reason} ->
-        Logger.warning("[LLM] #{mode} recipe provider #{provider_mod} failed: #{reason}, trying fallback")
-        fallback_opts = [model: fallback_model, api_key: fallback_key, system_prompt: system_prompt, temperature: temperature]
+        Logger.warning(
+          "[LLM] #{mode} recipe provider #{provider_mod} failed: #{reason}, trying fallback"
+        )
+
+        fallback_opts = [
+          model: fallback_model,
+          api_key: fallback_key,
+          system_prompt: system_prompt,
+          temperature: temperature
+        ]
 
         case fallback_mod.chat(messages, fallback_opts) do
           {:ok, text} -> {:ok, text}
@@ -136,15 +166,19 @@ defmodule Nutria.LLM do
   defp resolve(:fast) do
     config = Application.get_env(:nutria, :llm)
     fallback = if config[:fast_provider] == :google, do: :zen, else: :google
-    {provider_for(config[:fast_provider]), config[:fast_model], api_key_for(config[:fast_provider]),
-     provider_for(fallback), config[:smart_model], api_key_for(fallback)}
+
+    {provider_for(config[:fast_provider]), config[:fast_model],
+     api_key_for(config[:fast_provider]), provider_for(fallback), config[:smart_model],
+     api_key_for(fallback)}
   end
 
   defp resolve(:smart) do
     config = Application.get_env(:nutria, :llm)
     fallback = if config[:smart_provider] == :google, do: :zen, else: :google
-    {provider_for(config[:smart_provider]), config[:smart_model], api_key_for(config[:smart_provider]),
-     provider_for(fallback), config[:fast_model], api_key_for(fallback)}
+
+    {provider_for(config[:smart_provider]), config[:smart_model],
+     api_key_for(config[:smart_provider]), provider_for(fallback), config[:fast_model],
+     api_key_for(fallback)}
   end
 
   defp provider_for(:google), do: Nutria.LLM.Providers.Google

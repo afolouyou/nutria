@@ -11,17 +11,21 @@ defmodule Nutria.LLM.Providers.Zen do
 
   @impl true
   def chat(messages, opts \\ []) do
-    _model = opts[:model] || default_model()
+    model = opts[:model] || default_model()
     api_key = opts[:api_key] || default_api_key()
     system_prompt = opts[:system_prompt]
     temperature = opts[:temperature] || 0.7
 
-    request = build_request(messages, system_prompt, temperature, false)
+    request = build_request(messages, model, system_prompt, temperature, false)
 
     url = "#{@base_url}/v1/chat/completions"
 
     case Req.post(url, json: request, headers: auth_headers(api_key), receive_timeout: 60_000) do
-      {:ok, %Req.Response{status: 200, body: %{"choices" => [%{"message" => %{"content" => content}} | _]}}} ->
+      {:ok,
+       %Req.Response{
+         status: 200,
+         body: %{"choices" => [%{"message" => %{"content" => content}} | _]}
+       }} ->
         {:ok, content}
 
       {:ok, %Req.Response{status: 200, body: body}} ->
@@ -40,16 +44,21 @@ defmodule Nutria.LLM.Providers.Zen do
 
   @impl true
   def chat_stream(messages, caller_pid, opts \\ []) do
-    _model = opts[:model] || default_model()
+    model = opts[:model] || default_model()
     api_key = opts[:api_key] || default_api_key()
     system_prompt = opts[:system_prompt]
     temperature = opts[:temperature] || 0.7
 
-    request = build_request(messages, system_prompt, temperature, true)
+    request = build_request(messages, model, system_prompt, temperature, true)
 
     url = "#{@base_url}/v1/chat/completions"
 
-    case Req.post(url, json: request, headers: auth_headers(api_key), into: :self, receive_timeout: 120_000) do
+    case Req.post(url,
+           json: request,
+           headers: auth_headers(api_key),
+           into: :self,
+           receive_timeout: 120_000
+         ) do
       {:ok, %Req.Response{status: 200, body: stream}} ->
         parse_sse_stream(stream, caller_pid)
         :ok
@@ -64,7 +73,7 @@ defmodule Nutria.LLM.Providers.Zen do
     end
   end
 
-  defp build_request(messages, system_prompt, temperature, stream?) do
+  defp build_request(messages, model, system_prompt, temperature, stream?) do
     msgs =
       if system_prompt do
         [%{"role" => "system", "content" => system_prompt} | messages]
@@ -73,7 +82,7 @@ defmodule Nutria.LLM.Providers.Zen do
       end
 
     base = %{
-      "model" => default_model(),
+      "model" => model,
       "messages" => msgs,
       "temperature" => temperature
     }
@@ -102,7 +111,9 @@ defmodule Nutria.LLM.Providers.Zen do
 
   defp split_sse_events(data) do
     case String.split(data, "\n\n") do
-      [_] -> {[], data}
+      [_] ->
+        {[], data}
+
       parts ->
         {events, [last]} = Enum.split(parts, -1)
         {events, last}

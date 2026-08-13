@@ -1,7 +1,7 @@
 defmodule NutriaWeb.Controllers.PantryController do
   use NutriaWeb, :controller
 
-  action_fallback NutriaWeb.Controllers.FallbackController
+  action_fallback(NutriaWeb.Controllers.FallbackController)
 
   def index(conn, _params) do
     user_id = conn.assigns.current_user_id

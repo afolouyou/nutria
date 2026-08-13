@@ -1,7 +1,7 @@
 defmodule NutriaWeb.Controllers.ChatController do
   use NutriaWeb, :controller
 
-  action_fallback NutriaWeb.Controllers.FallbackController
+  action_fallback(NutriaWeb.Controllers.FallbackController)
 
   def create(conn, %{"text" => text} = params) do
     user_id = conn.assigns.current_user_id

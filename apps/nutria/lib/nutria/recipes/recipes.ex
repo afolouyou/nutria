@@ -75,7 +75,12 @@ defmodule Nutria.Recipes do
                           Pantry.update_quantity(item.id, 0)
 
                           [
-                            %{"name" => item.name, "quantity" => 0, "unit" => item.unit, "out_of_stock" => true}
+                            %{
+                              "name" => item.name,
+                              "quantity" => 0,
+                              "unit" => item.unit,
+                              "out_of_stock" => true
+                            }
                             | low_acc
                           ]
 

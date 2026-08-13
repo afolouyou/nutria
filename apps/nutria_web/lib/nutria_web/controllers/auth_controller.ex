@@ -1,7 +1,7 @@
 defmodule NutriaWeb.Controllers.AuthController do
   use NutriaWeb, :controller
 
-  action_fallback NutriaWeb.Controllers.FallbackController
+  action_fallback(NutriaWeb.Controllers.FallbackController)
 
   def root(conn, _params) do
     json(conn, %{"app" => "NutrIA", "status" => "ok"})

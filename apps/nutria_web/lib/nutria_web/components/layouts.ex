@@ -6,5 +6,5 @@ defmodule NutriaWeb.Layouts do
 
   import NutriaWeb.CoreComponents
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 end

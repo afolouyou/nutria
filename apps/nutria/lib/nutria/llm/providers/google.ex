@@ -20,14 +20,23 @@ defmodule Nutria.LLM.Providers.Google do
 
     url = "#{@base_url}/models/#{model}:generateContent"
 
-    case Req.post(url, json: request, headers: [{"x-goog-api-key", api_key}], receive_timeout: 60_000) do
-      {:ok, %Req.Response{status: 200, body: %{"candidates" => [%{"content" => %{"parts" => parts}} | _]}}} ->
+    case Req.post(url,
+           json: request,
+           headers: [{"x-goog-api-key", api_key}],
+           receive_timeout: 60_000
+         ) do
+      {:ok,
+       %Req.Response{
+         status: 200,
+         body: %{"candidates" => [%{"content" => %{"parts" => parts}} | _]}
+       }} ->
         text =
           parts
           |> Enum.reject(& &1["thought"])
           |> Enum.map(& &1["text"])
           |> Enum.join("")
           |> strip_thinking_blocks()
+
         {:ok, text}
 
       {:ok, %Req.Response{status: 200, body: body}} ->
@@ -54,7 +63,12 @@ defmodule Nutria.LLM.Providers.Google do
     request = build_request(messages, system_prompt, temperature, true)
     url = "#{@base_url}/models/#{model}:streamGenerateContent?alt=sse"
 
-    case Req.post(url, json: request, headers: [{"x-goog-api-key", api_key}], into: :self, receive_timeout: 120_000) do
+    case Req.post(url,
+           json: request,
+           headers: [{"x-goog-api-key", api_key}],
+           into: :self,
+           receive_timeout: 120_000
+         ) do
       {:ok, %Req.Response{status: 200, body: stream}} ->
         parse_sse_stream(stream, caller_pid, :google)
         :ok
@@ -103,6 +117,7 @@ defmodule Nutria.LLM.Providers.Google do
 
   defp parse_sse_stream(stream, caller_pid, _provider) do
     Process.delete(:title_sent)
+
     stream
     |> Enum.reduce(<<>>, fn chunk, buffer ->
       buffer = buffer <> chunk
@@ -119,7 +134,9 @@ defmodule Nutria.LLM.Providers.Google do
 
   defp split_sse_events(data) do
     case String.split(data, "\n\n") do
-      [_] -> {[], data}
+      [_] ->
+        {[], data}
+
       parts ->
         {events, [last]} = Enum.split(parts, -1)
         {events, last}
@@ -145,6 +162,7 @@ defmodule Nutria.LLM.Providers.Google do
 
                   if thought_text != "" do
                     title = extract_title(thought_text)
+
                     if title != "" do
                       send(caller_pid, {:thinking_title, title})
                       Process.put(:title_sent, true)

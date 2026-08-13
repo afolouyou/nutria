@@ -1,9 +1,9 @@
-defmodule Nutria.MixProject do
+defmodule NutriaMobile.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :nutria,
+      app: :nutria_mobile,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -21,19 +21,14 @@ defmodule Nutria.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
-      mod: {Nutria.Application, []}
+      extra_applications: [:logger]
     ]
   end
 
   defp deps do
     [
-      {:ecto_sql, "~> 3.12"},
-      {:postgrex, "~> 0.19"},
-      {:joken, "~> 2.6"},
-      {:bcrypt_elixir, "~> 3.0"},
-      {:req, "~> 0.5"},
-      {:jason, "~> 1.4"}
+      {:nutria, in_umbrella: true},
+      {:nutria_web, in_umbrella: true}
     ]
   end
 end
