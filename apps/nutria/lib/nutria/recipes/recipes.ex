@@ -5,33 +5,43 @@ defmodule Nutria.Recipes do
   require Logger
   alias Nutria.Pantry
   alias Nutria.Pantry.PantryItem
+  alias Nutria.Recipes.RecipeUsage
 
   def generate_from_pantry(user_id, notes \\ nil, mode \\ :fast) do
-    items = Pantry.get_all_items_for_user(user_id)
-
-    if items == [] do
-      {:error, :bad_request, "Sua despensa está vazia. Adicione ingredientes primeiro."}
+    unless RecipeUsage.can_generate?(user_id) do
+      {:error, :too_many_requests, "Limite de 5 receitas por dia atingido."}
     else
-      inventory_text =
-        items
-        |> Enum.map(fn i -> "- #{i.name}: #{i.quantity} #{i.unit}" end)
-        |> Enum.join("\n")
+      items = Pantry.get_all_items_for_user(user_id)
 
-      case Nutria.LLM.recipe(inventory_text, notes, mode) do
-        {:ok, raw_text} ->
-          {cleaned_text, consumed, low_stock} = parse_and_deduct(raw_text, items)
+      if items == [] do
+        {:error, :bad_request, "Sua despensa está vazia. Adicione ingredientes primeiro."}
+      else
+        inventory_text =
+          items
+          |> Enum.map(fn i -> "- #{i.name}: #{i.quantity} #{i.unit}" end)
+          |> Enum.join("\n")
 
-          {:ok,
-           %{
-             "suggestions" => cleaned_text,
-             "consumed" => consumed,
-             "low_stock" => low_stock
-           }}
+        case Nutria.LLM.recipe(inventory_text, notes, mode) do
+          {:ok, raw_text} ->
+            RecipeUsage.record_usage(user_id)
+            {cleaned_text, consumed, low_stock} = parse_and_deduct(raw_text, items)
 
-        {:error, _, detail} ->
-          {:error, :bad_gateway, detail}
+            {:ok,
+             %{
+               "suggestions" => cleaned_text,
+               "consumed" => consumed,
+               "low_stock" => low_stock
+             }}
+
+          {:error, _, detail} ->
+            {:error, :bad_gateway, detail}
+        end
       end
     end
+  end
+
+  def remaining_recipes(user_id) do
+    RecipeUsage.remaining_today(user_id)
   end
 
   defp parse_and_deduct(raw_text, items) do

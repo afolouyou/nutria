@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()} />
+    <title>NutrIA</title>
+    <link rel="icon" href={~p"/favicon.ico"} />
+    <script>
+      (function() {
+        var saved = null
+        try { saved = localStorage.getItem("nutria_theme") } catch (e) {}
+        var theme = saved ||
+          (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        document.documentElement.setAttribute("data-theme", theme)
+      })()
+    </script>
+    <link rel="stylesheet" href={~p"/assets/app.css?v=2"} />
+    <script defer src={~p"/assets/phoenix_html.js"}></script>
+    <script defer src={~p"/assets/phoenix.js"}></script>
+    <script defer src={~p"/assets/phoenix_live_view.js"}></script>
+    <script defer src={~p"/assets/app.js?v=2"}></script>
+  </head>
+  <body>
+    {@inner_content}
+  </body>
+</html>

@@ -7,8 +7,7 @@ Assistente nutricional com IA — bate-papo com streaming, despensa inteligente,
 | App | Descrição |
 | --- | --- |
 | `nutria` | Núcleo da aplicação: contas, autenticação, chat, conversas, LLM, despensa, receitas e uploads |
-| `nutria_web` | Interface web (Phoenix LiveView) + API JSON para o mobile |
-| `nutria_mobile` | LiveViews voltadas a dispositivos móveis (configurações, histórico) |
+| `nutria_app` | Interface mobile-only (Phoenix LiveView) |
 
 ## Funcionalidades
 
@@ -18,7 +17,7 @@ Assistente nutricional com IA — bate-papo com streaming, despensa inteligente,
 - **Histórico de conversas**
 - **Autenticação**: e-mail/senha (bcrypt), Google OAuth e JWT (`joken`) para a API
 - **Perfil**: troca de foto com upload direto (blur + câmera no avatar, upload automático) e tema claro/escuro
-- **API JSON** para consumo pelo app mobile
+- **UI mobile-only** com navegação por abas
 
 ## Stack
 
@@ -62,8 +61,7 @@ mix test
 ```
 apps/
   nutria/          # domínio (contas, chat, despensa, receitas, LLM, uploads)
-  nutria_web/      # LiveView, controllers, API JSON, ativos
-  nutria_mobile/   # LiveViews móveis
+  nutria_app/      # LiveView, controllers, layout e ativos do front único
 config/            # config da umbrella
 ```
 

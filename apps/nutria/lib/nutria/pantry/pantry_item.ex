@@ -6,6 +6,7 @@ defmodule Nutria.Pantry.PantryItem do
   @foreign_key_type :binary_id
 
   @valid_units ~w(g kg ml l un)
+  @valid_categories ~w(Mantimentos Refrigerados Hortifruti Temperos Outros)
   @low_stock_thresholds %{"g" => 200, "kg" => 0.2, "ml" => 200, "l" => 0.2, "un" => 2}
 
   schema "pantry_items" do
@@ -13,6 +14,7 @@ defmodule Nutria.Pantry.PantryItem do
     field(:name_norm, :string)
     field(:quantity, :float)
     field(:unit, :string)
+    field(:category, :string, default: "Outros")
     belongs_to(:user, Nutria.Accounts.User)
 
     timestamps(updated_at: false)
@@ -20,10 +22,11 @@ defmodule Nutria.Pantry.PantryItem do
 
   def changeset(item, attrs) do
     item
-    |> cast(attrs, [:name, :quantity, :unit, :user_id])
+    |> cast(attrs, [:name, :quantity, :unit, :category, :user_id])
     |> validate_required([:name, :quantity, :unit, :user_id])
     |> validate_number(:quantity, greater_than: 0)
     |> validate_inclusion(:unit, @valid_units)
+    |> validate_inclusion(:category, @valid_categories)
     |> normalize_name()
   end
 
@@ -33,6 +36,7 @@ defmodule Nutria.Pantry.PantryItem do
   end
 
   def valid_unit?(unit), do: unit in @valid_units
+  def valid_category?(category), do: category in @valid_categories
 
   defp normalize_name(changeset) do
     case get_change(changeset, :name) do

@@ -9,7 +9,7 @@ config :nutria, Nutria.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
-config :nutria_web, NutriaWeb.Endpoint,
+config :nutria_app, NutriaWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: 4000],
   check_origin: false,
   code_reloader: true,
@@ -20,6 +20,6 @@ config :nutria_web, NutriaWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:nutria, ~w(--watch)]}
   ]
 
-config :nutria_web, :dev_routes, true
+config :nutria_app, :dev_routes, true
 
 config :logger, :console, format: "[$level] $message\n"

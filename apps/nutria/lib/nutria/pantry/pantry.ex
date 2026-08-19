@@ -23,8 +23,14 @@ defmodule Nutria.Pantry do
       name_norm = Ecto.Changeset.get_field(changeset, :name_norm)
       unit = Ecto.Changeset.get_field(changeset, :unit)
       quantity = Ecto.Changeset.get_field(changeset, :quantity)
+      category = Ecto.Changeset.get_field(changeset, :category) || "Outros"
 
-      case Repo.get_by(PantryItem, user_id: user_id, name_norm: name_norm, unit: unit) do
+      case Repo.get_by(PantryItem,
+             user_id: user_id,
+             name_norm: name_norm,
+             unit: unit,
+             category: category
+           ) do
         nil ->
           case Repo.insert(changeset) do
             {:ok, item} -> {:ok, item_to_map(item)}
@@ -90,6 +96,7 @@ defmodule Nutria.Pantry do
       "name" => item.name,
       "quantity" => item.quantity,
       "unit" => item.unit,
+      "category" => item.category,
       "low_stock" => PantryItem.low_stock?(item.quantity, item.unit)
     }
   end

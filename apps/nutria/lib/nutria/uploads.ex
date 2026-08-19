@@ -14,7 +14,7 @@ defmodule Nutria.Uploads do
   }
 
   def dir do
-    Application.app_dir(:nutria_web, "priv/static/uploads/avatars")
+    Application.app_dir(:nutria_app, "priv/static/uploads/avatars")
   end
 
   def store(source_path, user_id) do

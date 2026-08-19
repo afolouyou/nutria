@@ -23,7 +23,7 @@ config :nutria, :llm,
   smart_provider: :zen,
   smart_model: "deepseek-v4-flash-free"
 
-config :nutria_web, NutriaWeb.Endpoint,
+config :nutria_app, NutriaWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Phoenix.Endpoint.Cowboy2Adapter,
   render_errors: [
@@ -33,7 +33,7 @@ config :nutria_web, NutriaWeb.Endpoint,
   pubsub_server: Nutria.PubSub,
   live_view: [signing_salt: "GMVZPjA0hGN3WgCB"]
 
-config :nutria_web, :generators, context_app: :nutria
+config :nutria_app, :generators, context_app: :nutria
 
 config :tailwind,
   version: "4.0.17",
@@ -42,7 +42,7 @@ config :tailwind,
       --input=css/app.css
       --output=../priv/static/assets/app.css
     ),
-    cd: Path.expand("../apps/nutria_web/assets", __DIR__)
+    cd: Path.expand("../apps/nutria_app/assets", __DIR__)
   ]
 
 config :logger, :console,
