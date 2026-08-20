@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>NutrIA</title>
+    <script>
+      (function() {
+        var saved = null
+        try { saved = localStorage.getItem("nutria_theme") } catch (e) {}
+        var theme = saved ||
+          (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        document.documentElement.setAttribute("data-theme", theme)
+      })()
+    </script>
+    <style>
+      /* ============ Tema original (light / dark) ============ */
+      :root, [data-theme="light"] {
+        color-scheme: light;
+        --bg: #f6f7f6;
+        --surface: #ffffff;
+        --surface-2: #f0f2f0;
+        --border: #e3e6e3;
+        --text: #1c231e;
+        --muted: #6c7570;
+        --accent: #16a34a;
+        --accent-hover: #15803d;
+        --accent-soft: #e8f5ec;
+        --danger: #dc2626;
+        --danger-soft: #fdecec;
+        --shadow: 0 4px 16px rgba(0,0,0,.08);
+        --scrim: rgba(0,0,0,.4);
+      }
+      [data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #121413;
+        --surface: #1a1d1b;
+        --surface-2: #222624;
+        --border: #2c312e;
+        --text: #e8eae8;
+        --muted: #9aa39d;
+        --accent: #22c55e;
+        --accent-hover: #4ade80;
+        --accent-soft: rgba(34,197,94,.14);
+        --danger: #f87171;
+        --danger-soft: rgba(248,113,113,.12);
+        --shadow: 0 4px 16px rgba(0,0,0,.4);
+        --scrim: rgba(0,0,0,.6);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 15px;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      button { font: inherit; color: inherit; cursor: pointer; }
+      a { color: inherit; text-decoration: none; }
+      svg { flex-shrink: 0; }
+
+      /* ============ Layout ============ */
+      .app { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+
+      /* ============ Sidebar ============ */
+      .sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+      }
+      .new-chat-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        font-size: 14px;
+        font-weight: 500;
+        transition: background .15s;
+      }
+      .new-chat-btn:hover { background: var(--surface-2); }
+      .new-chat-btn .plus {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .conversations-list {
+        flex: 1;
+        overflow-y: auto;
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .conversation-item {
+        display: block;
+        padding: 9px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background .15s;
+      }
+      .conversation-item:hover { background: var(--surface-2); }
+      .conversation-item.active { background: var(--accent-soft); }
+
+      .sidebar-footer {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pantry-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: background .15s;
+      }
+      .pantry-link:hover { background: var(--surface-2); }
+      .pantry-link svg { width: 17px; height: 17px; color: var(--muted); }
+
+      /* Profile */
+      .profile-wrapper { position: relative; }
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 12px;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+        text-align: left;
+        transition: background .15s;
+      }
+      .user-profile:hover { background: var(--surface-2); }
+      .avatar {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: lowercase;
+      }
+      .user-name { flex: 1; font-size: 14px; font-weight: 500; }
+      .dropdown-arrow { color: var(--muted); font-size: 10px; transition: transform .2s; }
+      .profile-wrapper.open .dropdown-arrow { transform: rotate(180deg); }
+
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 0; right: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: 4px;
+        z-index: 60;
+      }
+      .profile-wrapper.open .dropdown-menu { display: block; }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 9px 10px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        font-size: 14px;
+        text-align: left;
+        transition: background .15s;
+      }
+      .dropdown-item:hover { background: var(--surface-2); }
+      .dropdown-item svg { color: var(--muted); }
+      .dropdown-item-danger { color: var(--danger); }
+      .dropdown-item-danger svg { color: var(--danger); }
+      .dropdown-item-danger:hover { background: var(--danger-soft); }
+      .dropdown-separator { height: 1px; background: var(--border); margin: 4px 2px; }
+
+      /* ============ Main / views ============ */
+      .main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .view { display: none; flex-direction: column; height: 100%; min-height: 0; }
+      .view.active { display: flex; }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 64px;
+        padding: 14px 16px;
+        padding-top: calc(14px + env(safe-area-inset-top));
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        font-size: 15px;
+        background: var(--surface);
+      }
+      .menu-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 36px; height: 36px;
+        margin-left: -8px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text);
+      }
+      .menu-btn:hover { background: var(--surface-2); }
+
+      /* ============ Chat body ============ */
+      .chat-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .welcome-block {
+        width: 100%;
+        max-width: 680px;
+        margin: auto 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .welcome-title {
+        font-size: clamp(24px, 6vw, 32px);
+        font-weight: 700;
+        margin: 0 0 24px;
+        letter-spacing: -.02em;
+      }
+      .suggestions-section { width: 100%; max-width: 620px; text-align: left; }
+      .suggestions-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 2px 10px;
+      }
+      .suggestions-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 34px 10px;
+      }
+      .suggestions-loading svg { width: 46px; height: 46px; }
+      .suggestions-loading span { font-size: 14px; color: var(--muted); }
+      .suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        width: 100%;
+      }
+      .suggestion-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 13px 14px;
+        font-size: 13.5px;
+        line-height: 1.45;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .15s, background .15s;
+      }
+      .suggestion-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+      /* Messages */
+      .messages {
+        width: 100%;
+        max-width: 760px;
+        text-align: left;
+        display: none;
+        flex-direction: column;
+      }
+      .messages.visible { display: flex; }
+      .message { display: flex; margin: 12px 0; }
+      .message.user { justify-content: flex-end; }
+      .bubble {
+        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 14px;
+        font-size: 15px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .message.bot .bubble {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+      }
+      .message.user .bubble {
+        background: var(--accent);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+      }
+      .bubble strong { font-weight: 600; }
+      .bubble ul { margin: 6px 0; padding-left: 20px; }
+      .bubble p { margin: 0 0 8px; }
+      .bubble p:last-child { margin-bottom: 0; }
+      .typing .bubble { display: inline-flex; gap: 5px; align-items: center; padding: 16px; }
+      .typing .bubble span {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--muted);
+        animation: blink 1.2s infinite;
+      }
+      .typing .bubble span:nth-child(2) { animation-delay: .18s; }
+      .typing .bubble span:nth-child(3) { animation-delay: .36s; }
+      @keyframes blink { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
+
+      /* ============ Input area ============ */
+      .input-area {
+        padding: 10px 16px;
+        padding-bottom: 12px;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+      }
+      .mode-toggle-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        max-width: 760px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* Botão único de modo (Básico ⇄ Smart) */
+      .mode-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 13px;
+        font-weight: 600;
+        transition: background .2s, border-color .2s, color .2s, transform .1s;
+      }
+      .mode-toggle:active { transform: scale(.95); }
+      .mode-toggle.mode-basico {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      [data-theme="dark"] .mode-toggle.mode-basico { color: var(--accent-hover); }
+      .mode-toggle.mode-smart {
+        background: rgba(252,113,0,.14);
+        border-color: #fc7100;
+        color: #fc7100;
+      }
+      .mode-toggle .icon-smart { display: none; }
+      .mode-toggle.mode-smart .icon-smart { display: block; }
+      .mode-toggle.mode-smart .icon-basico { display: none; }
+
+      .menus-remaining {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        white-space: nowrap;
+      }
+      .menus-remaining .mr-value { font-weight: 700; color: #fc7100; }
+
+      .input-wrapper { max-width: 760px; margin: 0 auto; }
+      .chat-form { display: flex; gap: 8px; }
+      .chat-input {
+        flex: 1;
+        min-width: 0;
+        padding: 11px 14px;
+        font: inherit;
+        font-size: 16px;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        transition: border-color .15s;
+      }
+      .chat-input:focus { border-color: var(--accent); }
+      .chat-input::placeholder { color: var(--muted); }
+      .send-btn {
+        width: 46px; height: 46px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 12px;
+        background: var(--accent);
+        color: #fff;
+        transition: background .15s, opacity .15s;
+      }
+      .send-btn:hover { background: var(--accent-hover); }
+      .send-btn:disabled { opacity: .45; cursor: default; }
+
+      /* ============ Despensa ============ */
+      .pantry-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 16px 28px;
+      }
+      .pantry-inner { max-width: 640px; margin: 0 auto; }
+      .pantry-sub {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 16px;
+      }
+      .pantry-form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+      .pantry-form .pantry-name { grid-column: 1; }
+      .pantry-form .send-btn { grid-column: 2; grid-row: 1; }
+      .pantry-fields {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+      }
+      .pantry-qty {
+        flex: 0 1 84px;
+        min-width: 0;
+        padding: 11px 12px;
+        font: inherit;
+        font-size: 16px;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        transition: border-color .15s;
+      }
+      .pantry-qty:focus { border-color: var(--accent); }
+      .pantry-qty::placeholder { color: var(--muted); }
+      .pantry-select {
+        padding: 11px 10px;
+        font: inherit;
+        font-size: 14px;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+      }
+      .pantry-select:focus { border-color: var(--accent); }
+      .pantry-unit { flex: 0 0 78px; }
+      .pantry-cat { flex: 1; min-width: 0; }
+      .pantry-count {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 16px 2px 8px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 600;
+      }
+      .pantry-list { display: flex; flex-direction: column; gap: 8px; }
+      .pantry-group-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        margin: 10px 2px 2px;
+      }
+      .pantry-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .pantry-item .p-name { flex: 1; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pantry-item .p-qty {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 3px 9px;
+        white-space: nowrap;
+      }
+      [data-theme="dark"] .pantry-item .p-qty { color: var(--accent-hover); }
+      .pantry-item .p-cat {
+        font-size: 11px;
+        color: var(--muted);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 3px 9px;
+        white-space: nowrap;
+      }
+      .p-remove {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px; height: 30px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        transition: background .15s, color .15s;
+      }
+      .p-remove:hover { background: var(--danger-soft); color: var(--danger); }
+      .pantry-empty {
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        padding: 30px 10px;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+      }
+
+      /* ============ Perfil (view) ============ */
+      .profile-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 16px 28px;
+      }
+      .profile-inner {
+        max-width: 480px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* ============ Settings dialog (desktop) ============ */
+      .settings-dialog {
+        border: 0;
+        border-radius: 14px;
+        padding: 0;
+        margin: auto;
+        width: min(420px, calc(100vw - 32px));
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: var(--shadow);
+      }
+      .settings-dialog::backdrop { background: rgba(0,0,0,.5); }
+      .settings-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-dialog-title { font-size: 16px; font-weight: 600; margin: 0; }
+      .settings-dialog-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px; height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+      }
+      .settings-dialog-close:hover { background: var(--surface-2); color: var(--text); }
+      .settings-dialog-body {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .settings-profile-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 18px 14px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .settings-avatar {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .settings-user-name { font-weight: 600; font-size: 15px; }
+      .settings-user-email { color: var(--muted); font-size: 13px; }
+      .settings-provider-badge {
+        margin-top: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 3px 10px;
+        border-radius: 999px;
+      }
+      .settings-theme-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        text-align: left;
+        font-size: 14px;
+        transition: background .15s;
+      }
+      .settings-theme-row:hover { background: var(--surface-2); }
+      .settings-theme-row svg { width: 18px; height: 18px; color: var(--muted); }
+      .icon-sun { display: block; }
+      .icon-moon { display: none; }
+      [data-theme="dark"] .icon-sun { display: none; }
+      [data-theme="dark"] .icon-moon { display: block; }
+      .settings-theme-label { flex: 1; font-weight: 500; }
+      .settings-theme-state { color: var(--muted); font-size: 13px; }
+      .settings-logout-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--danger-soft);
+        color: var(--danger);
+        font-size: 14px;
+        font-weight: 500;
+        transition: filter .15s;
+      }
+      .settings-logout-btn:hover { filter: brightness(.96); }
+
+      /* ============ Bottom nav ============ */
+      .bottom-nav { display: none; }
+      .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 7px 0 5px;
+        background: none;
+        border: 0;
+        border-radius: 10px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
+        transition: color .15s, transform .1s;
+      }
+      .nav-btn svg { width: 22px; height: 22px; }
+      .nav-btn.active { color: var(--accent); }
+      [data-theme="dark"] .nav-btn.active { color: var(--accent-hover); }
+      .nav-btn:active { transform: scale(.93); }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%) translateY(8px);
+        background: var(--text);
+        color: var(--bg);
+        padding: 9px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .25s, transform .25s;
+        z-index: 100;
+        max-width: calc(100vw - 40px);
+        text-align: center;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+      /* Scrim (mobile) */
+      .scrim {
+        position: fixed;
+        inset: 0;
+        background: var(--scrim);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 40;
+      }
+      body.sidebar-open .scrim { opacity: 1; pointer-events: auto; }
+
+      /* ============ Mobile ============ */
+      @media (max-width: 560px) {
+        .suggestions-grid { grid-template-columns: 1fr; }
+        .pantry-fields { flex-wrap: wrap; }
+        .pantry-qty { flex: 1 1 70px; }
+        .pantry-unit { flex: 1 1 78px; }
+        .pantry-cat { flex: 2 1 140px; }
+        .mode-toggle-bar { gap: 8px; }
+        .menus-remaining { font-size: 12px; padding: 5px 10px; }
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          position: fixed;
+          top: 0; bottom: 0; left: 0;
+          z-index: 50;
+          width: min(84vw, 300px);
+          padding-top: calc(12px + env(safe-area-inset-top));
+          transform: translateX(-100%);
+          transition: transform .3s ease;
+        }
+        body.sidebar-open .sidebar { transform: translateX(0); box-shadow: var(--shadow); }
+        .menu-btn { display: inline-flex; }
+        .sidebar-footer { display: none; }
+        .bottom-nav {
+          display: flex;
+          background: var(--surface);
+          border-top: 1px solid var(--border);
+          padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+        }
+        .toast { bottom: calc(74px + env(safe-area-inset-bottom)); }
+        .bubble { max-width: 88%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="scrim" id="scrim"></div>
+
+      <aside class="sidebar" id="sidebar">
+        <a href="/chat" class="new-chat-btn" id="new-chat-btn">
+          <span class="plus">+</span> Nova conversa
+        </a>
+
+        <div class="conversations-list" id="conversations-list">
+          <a href="/chat/2c975829-96c3-4086-9bfa-32b302de7974" class="conversation-item">opa</a>
+          <a href="/chat/d65015cb-f04a-44e7-9bc5-8be292d07a3b" class="conversation-item">opa</a>
+          <a href="/chat/40cc7015-2a9f-4499-b3a7-feb8a2fe9ede" class="conversation-item">opa</a>
+        </div>
+
+        <div class="sidebar-footer">
+          <a href="/pantry" class="pantry-link" id="pantry-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <path d="M3 9h18M9 3v18"></path>
+            </svg>
+            Despensa
+          </a>
+
+          <div class="profile-wrapper" id="profile-dropdown">
+            <button class="user-profile" id="profile-btn" aria-haspopup="true" aria-expanded="false">
+              <div class="avatar">a</div>
+              <span class="user-name">afonso</span>
+              <span class="dropdown-arrow">&#9662;</span>
+            </button>
+
+            <div class="dropdown-menu" id="profile-dropdown-menu">
+              <button class="dropdown-item" onclick="document.getElementById('settings-dialog').showModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                </svg>
+                Configurações
+              </button>
+              <div class="dropdown-separator"></div>
+              <a href="/session/destroy" class="dropdown-item dropdown-item-danger logout-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Sair da conta
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+
+        <!-- ============ VIEW: CHAT ============ -->
+        <section class="view active" id="view-chat">
+          <header class="chat-header">
+            <button class="menu-btn" id="menu-btn" aria-label="Abrir menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="4" y1="6" x2="20" y2="6"></line>
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="18" x2="20" y2="18"></line>
+              </svg>
+            </button>
+            Chat
+          </header>
+
+          <div class="chat-body" id="chat-body">
+            <div class="welcome-block" id="welcome-block">
+              <h1 class="welcome-title">Olá! Eu sou o NutrIA.</h1>
+
+              <div class="suggestions-section">
+                <div class="suggestions-label">Sugestões:</div>
+
+                <div class="suggestions-loading" id="suggestions-loading">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g fill="#fc7100" stroke="#fc7100" stroke-width="15"><circle r="20" cx="140" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 80;0 80;0 80;-80 80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"></animateTransform></circle><circle r="20" cx="60" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0;80 0;80 0;80 0;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"></animateTransform></circle><circle r="20" cx="60" cy="140"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0 ;0 0;0 -80;0 -80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"></animateTransform></circle></g></svg>
+                  <span>Sugerindo opções:</span>
+                </div>
+
+                <div class="suggestions-grid" id="suggestions-grid" style="display:none">
+                  <div class="suggestion-card" data-text="Analise meu almoço: arroz, feijão, frango grelhado e salada">
+                    Analise meu almoço: arroz, feijão, frango grelhado e salada
+                  </div>
+                  <div class="suggestion-card" data-text="Crie um plano alimentar para emagrecer 3kg">
+                    Crie um plano alimentar para emagrecer 3kg
+                  </div>
+                  <div class="suggestion-card" data-text="O que devo comer no café da manhã?">
+                    O que devo comer no café da manhã?
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="messages" id="messages"></div>
+          </div>
+
+          <div class="input-area">
+            <div class="mode-toggle-bar">
+              <div class="menus-remaining" id="menus-remaining" title="Cardápios restantes hoje">
+                <span>Cardápios restantes: <span class="mr-value" id="mr-value">?</span></span>
+              </div>
+
+              <button type="button" class="mode-toggle mode-basico" id="mode-toggle" aria-label="Alternar modo de inteligência">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-basico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-smart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"></path><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"></path></svg>
+                <span id="mode-toggle-label">Básico</span>
+              </button>
+            </div>
+            <div class="input-wrapper">
+              <form id="chat-form" class="chat-form">
+                <input type="text" name="text" class="chat-input" id="chat-input" placeholder="Pergunte ao NutrIA..." autocomplete="off" enterkeyhint="send">
+                <button type="submit" class="send-btn" id="send-btn" aria-label="Enviar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ VIEW: DESPENSA ============ -->
+        <section class="view" id="view-pantry">
+          <header class="chat-header">Despensa</header>
+
+          <div class="pantry-body">
+            <div class="pantry-inner">
+              <p class="pantry-sub">Guarde o que você tem em casa, com quantidades, para controlar seus alimentos.</p>
+
+              <form id="pantry-form" class="pantry-form">
+                <input type="text" class="chat-input pantry-name" id="pantry-input" placeholder="Ex.: arroz, ovos, tomate..." autocomplete="off" enterkeyhint="next">
+
+                <button type="submit" class="send-btn" aria-label="Adicionar item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+
+                <div class="pantry-fields">
+                  <input type="number" class="pantry-qty" id="pantry-qty" placeholder="Qtd." min="0" step="any" inputmode="decimal" aria-label="Quantidade">
+                  <select class="pantry-select pantry-unit" id="pantry-unit" aria-label="Unidade">
+                    <option value="un">un</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="pct">pct</option>
+                    <option value="cx">cx</option>
+                  </select>
+                  <select class="pantry-select pantry-cat" id="pantry-category" aria-label="Categoria">
+                    <option value="Mantimentos">Mantimentos</option>
+                    <option value="Refrigerados">Refrigerados</option>
+                    <option value="Hortifruti">Hortifruti</option>
+                    <option value="Temperos">Temperos</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                </div>
+              </form>
+
+              <div class="pantry-count" id="pantry-count"></div>
+              <div class="pantry-list" id="pantry-list"></div>
+              <div class="pantry-empty" id="pantry-empty" style="display:none">Sua despensa está vazia. Adicione o primeiro item acima. 🧺</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ VIEW: PERFIL ============ -->
+        <section class="view" id="view-profile">
+          <header class="chat-header">Perfil</header>
+
+          <div class="profile-body">
+            <div class="profile-inner">
+              <div class="settings-profile-card">
+                <div class="settings-avatar">a</div>
+                <div class="settings-user-name">afonso</div>
+                <div class="settings-user-email">afonso@afonso.com</div>
+                <div class="settings-provider-badge">Email</div>
+              </div>
+
+              <button type="button" class="settings-theme-row theme-toggle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sun"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <span class="settings-theme-label">Modo escuro</span>
+                <span class="settings-theme-state theme-state"></span>
+              </button>
+
+              <a href="/session/destroy" class="settings-logout-btn logout-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
+                </svg>
+                Sair da conta
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ============ MENU INFERIOR ============ -->
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Navegação principal">
+      <button type="button" class="nav-btn active" data-tab="chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chat</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="pantry">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        <span>Despensa</span>
+      </button>
+      <button type="button" class="nav-btn" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+    <!-- Dialog de configurações (usado no desktop) -->
+    <dialog id="settings-dialog" class="settings-dialog">
+      <div class="settings-dialog-header">
+        <h2 class="settings-dialog-title">Configurações</h2>
+        <button class="settings-dialog-close" onclick="this.closest('dialog').close()" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="settings-dialog-body">
+        <div class="settings-profile-card">
+          <div class="settings-avatar">a</div>
+          <div class="settings-user-name">afonso</div>
+          <div class="settings-user-email">afonso@afonso.com</div>
+          <div class="settings-provider-badge">Email</div>
+        </div>
+
+        <button type="button" class="settings-theme-row theme-toggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sun"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <span class="settings-theme-label">Modo escuro</span>
+          <span class="settings-theme-state theme-state"></span>
+        </button>
+
+        <a href="/session/destroy" class="settings-logout-btn logout-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path>
+          </svg>
+          Sair da conta
+        </a>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+    (function() {
+      "use strict";
+      var body = document.body;
+
+      /* ---------- Toast ---------- */
+      var toastEl = document.getElementById("toast"), toastTimer = null;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() { toastEl.classList.remove("show"); }, 2400);
+      }
+
+      /* ---------- Tema ---------- */
+      function syncThemeLabels() {
+        var dark = document.documentElement.getAttribute("data-theme") === "dark";
+        document.querySelectorAll(".theme-state").forEach(function(el) {
+          el.textContent = dark ? "Ativado" : "Desativado";
+        });
+      }
+      document.querySelectorAll(".theme-toggle").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          try { localStorage.setItem("nutria_theme", next); } catch (e) {}
+          syncThemeLabels();
+        });
+      });
+      syncThemeLabels();
+
+      /* ---------- Abas ---------- */
+      var views = {
+        chat: document.getElementById("view-chat"),
+        pantry: document.getElementById("view-pantry"),
+        profile: document.getElementById("view-profile")
+      };
+      var navBtns = document.querySelectorAll(".nav-btn");
+      function setTab(tab) {
+        Object.keys(views).forEach(function(k) {
+          views[k].classList.toggle("active", k === tab);
+        });
+        navBtns.forEach(function(b) {
+          b.classList.toggle("active", b.getAttribute("data-tab") === tab);
+        });
+        if (tab === "chat") {
+          input.focus({ preventScroll: true });
+          if (welcomeBlock.style.display !== "none") playSuggestionsLoading();
+        }
+      }
+      navBtns.forEach(function(btn) {
+        btn.addEventListener("click", function() { setTab(btn.getAttribute("data-tab")); });
+      });
+
+      /* ---------- Drawer mobile ---------- */
+      function openSidebar() { body.classList.add("sidebar-open"); }
+      function closeSidebar() { body.classList.remove("sidebar-open"); }
+      document.getElementById("menu-btn").addEventListener("click", function() {
+        body.classList.contains("sidebar-open") ? closeSidebar() : openSidebar();
+      });
+      document.getElementById("scrim").addEventListener("click", closeSidebar);
+
+      /* ---------- Dropdown perfil ---------- */
+      var profile = document.getElementById("profile-dropdown");
+      var profileBtn = document.getElementById("profile-btn");
+      profileBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var open = profile.classList.toggle("open");
+        profileBtn.setAttribute("aria-expanded", String(open));
+      });
+      document.addEventListener("click", function(e) {
+        if (!profile.contains(e.target)) {
+          profile.classList.remove("open");
+          profileBtn.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      /* ---------- Link Despensa ---------- */
+      document.getElementById("pantry-link").addEventListener("click", function(e) {
+        e.preventDefault();
+        setTab("pantry");
+        closeSidebar();
+      });
+
+      /* ---------- Logout ---------- */
+      document.querySelectorAll(".logout-link").forEach(function(a) {
+        a.addEventListener("click", function(e) {
+          e.preventDefault();
+          profile.classList.remove("open");
+          var dlg = document.getElementById("settings-dialog");
+          if (dlg.open) dlg.close();
+          toast("Você saiu da conta (demonstração).");
+        });
+      });
+
+      /* ---------- Cardápios restantes ---------- */
+      var mrValue = document.getElementById("mr-value");
+      var menusRemainingTimer = null;
+      function loadMenusRemaining() {
+        mrValue.textContent = "?";
+        clearTimeout(menusRemainingTimer);
+        menusRemainingTimer = setTimeout(function() {
+          var val = Math.floor(Math.random() * 5) + 1;
+          mrValue.textContent = String(val);
+        }, 1800);
+      }
+      loadMenusRemaining();
+
+      /* ---------- Chat ---------- */
+      var chatBody = document.getElementById("chat-body");
+      var welcomeBlock = document.getElementById("welcome-block");
+      var messagesEl = document.getElementById("messages");
+      var form = document.getElementById("chat-form");
+      var input = document.getElementById("chat-input");
+      var sendBtn = document.getElementById("send-btn");
+      var mode = "basico";
+      var busy = false;
+
+      /* Botão único de modo: Básico (verde) ⇄ Smart (laranja) */
+      var modeToggle = document.getElementById("mode-toggle");
+      var modeToggleLabel = document.getElementById("mode-toggle-label");
+      function applyModeUI() {
+        var smart = mode === "smart";
+        modeToggle.classList.toggle("mode-smart", smart);
+        modeToggle.classList.toggle("mode-basico", !smart);
+        modeToggleLabel.textContent = smart ? "Smart" : "Básico";
+        modeToggle.setAttribute("aria-pressed", String(smart));
+        try { localStorage.setItem("nutria_mode", mode); } catch (e) {}
+      }
+      modeToggle.addEventListener("click", function() {
+        mode = mode === "basico" ? "smart" : "basico";
+        applyModeUI();
+      });
+      try {
+        var savedMode = localStorage.getItem("nutria_mode");
+        if (savedMode === "smart" || savedMode === "basico") mode = savedMode;
+      } catch (e) {}
+      applyModeUI();
+
+      /* Loading sugestões */
+      var suggestionsLoading = document.getElementById("suggestions-loading");
+      var suggestionsGrid = document.getElementById("suggestions-grid");
+      var suggestionsTimer = null;
+      function playSuggestionsLoading() {
+        clearTimeout(suggestionsTimer);
+        suggestionsLoading.style.display = "";
+        suggestionsGrid.style.display = "none";
+        suggestionsTimer = setTimeout(function() {
+          suggestionsLoading.style.display = "none";
+          suggestionsGrid.style.display = "";
+        }, 1600);
+      }
+
+      function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function md(src) {
+        var out = "", inList = false;
+        esc(src).split("\n").forEach(function(ln) {
+          if (ln.indexOf("- ") === 0) {
+            if (!inList) { out += "<ul>"; inList = true; }
+            out += "<li>" + ln.slice(2).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") + "</li>";
+          } else {
+            if (inList) { out += "</ul>"; inList = false; }
+            if (ln.trim() !== "") out += "<p>" + ln.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") + "</p>";
+          }
+        });
+        if (inList) out += "</ul>";
+        return out;
+      }
+
+      var KB = [
+        { test: /analis|almo[çc]o|arroz|feij[ãa]o|frango|salada/,
+          basico: "Boa escolha! 🍽️ Esse almoço está bem equilibrado.\n\n**Estimativa:** ~550–650 kcal, com ~35–40 g de proteína.\n\n- Arroz com feijão forma uma proteína vegetal completa\n- O frango grelhado traz proteína magra de qualidade\n- A salada fornece fibras e vitaminas\n\n**Dica:** um fio de azeite na salada ajuda na absorção das vitaminas.",
+          smart: "**Análise nutricional do almoço**\n\n- **Calorias:** ~600 kcal\n- **Proteínas:** ~38 g\n- **Carboidratos:** ~70 g\n- **Gorduras:** ~14 g\n- **Fibras:** ~9 g\n\n**Pontos fortes**\n- Arroz + feijão = proteína vegetal completa\n- Frango grelhado: saciedade com pouca gordura\n- Salada: micronutrientes com poucas calorias\n\n**Sugestões**\n- Adicione folhas escuras (ferro e cálcio)\n- Azeite extra virgem para absorver vitaminas A, D, E e K\n- Fruta cítrica de sobremesa melhora a absorção do ferro" },
+        { test: /plano|emagrec|dieta|perder/,
+          basico: "Claro! 🎯 Para perder 3 kg com saúde, mire num déficit leve de ~300–400 kcal/dia por 4 a 6 semanas.\n\n- **Café:** proteína + fruta\n- **Almoço:** metade do prato com vegetais\n- **Lanche:** iogurte natural ou castanhas\n- **Jantar:** leve, com proteína e salada\n\nQuer um cardápio detalhado de 7 dias?",
+          smart: "**Plano para perder 3 kg**\n\nDéficit de ~350 kcal/dia → ~0,5 kg por semana.\n\n**Exemplo de dia (~1.600 kcal)**\n- Café (350 kcal): ovos + pão integral + fruta\n- Almoço (550 kcal): salada, legumes, proteína magra, arroz e feijão\n- Lanche (200 kcal): iogurte com aveia\n- Jantar (450 kcal): peixe ou frango + vegetais\n\n**Regras de ouro**\n- Beba 2–3 L de água por dia\n- Proteína em todas as refeições\n- Evite calorias líquidas\n- Durma 7–8 horas" },
+        { test: /a[çc][úu]car|doce|sobremesa/,
+          basico: "Ótimo objetivo! 🍬 Reduzir açúcar fica mais fácil com trocas graduais:\n\n- Prefira frutas quando der vontade de doce\n- Diminua o açúcar do café aos poucos\n- Leia rótulos: açúcar aparece como xarope ou maltose\n- Evite bebidas açucaradas\n\nEm 2–3 semanas o paladar se adapta!",
+          smart: "**Plano para reduzir o açúcar**\n\n**Trocas inteligentes**\n- Refrigerante → água com gás e limão\n- Chocolate ao leite → chocolate 70%\n- Cereal açucarado → aveia com banana\n\n**Onde o açúcar se esconde**\n- Molhos prontos e ketchup\n- Iogurtes com sabor\n- Sucos de caixinha\n\n**Estratégias**\n- Proteína e fibra reduzem a vontade de doce\n- Mude 1 hábito por semana\n- Permita um doce pequeno por semana, sem culpa" },
+        { test: /caf[ée] da manh[ãa]|desjejum|manh[ãa]/,
+          basico: "☀️ Um bom café da manhã combina **proteína + carboidrato de qualidade + fruta**.\n\n- Ovos mexidos com pão integral e fruta\n- Iogurte natural com aveia e banana\n- Tapioca com queijo e mamão\n\nO ideal é comer nos primeiros 30–60 min após acordar.",
+          smart: "**Café da manhã equilibrado**\n\nFórmula: **proteína + carboidrato complexo + gordura boa + fruta**.\n\n**4 opções práticas**\n- Ovos mexidos + pão integral + fruta (~350 kcal)\n- Iogurte natural + aveia + banana (~300 kcal)\n- Tapioca com queijo minas + mamão (~320 kcal)\n- Smoothie de leite, banana, aveia e pasta de amendoim (~380 kcal)\n\n**Dicas**\n- Coma até 1 hora após acordar\n- Se treina cedo, priorize carboidratos leves antes" }
+      ];
+
+      function reply(text) {
+        for (var i = 0; i < KB.length; i++) {
+          if (KB[i].test.test(text)) return KB[i][mode];
+        }
+        var t = text.length > 70 ? text.slice(0, 70) + "…" : text;
+        return "Boa pergunta! 🌱 Sobre **“" + t + "**”, posso ajudar melhor se você:\n\n- Descrever uma refeição para eu analisar\n- Informar seu objetivo (emagrecer, ganhar massa, saúde)\n- Mencionar restrições alimentares, se houver";
+      }
+
+      function addMessage(role, content, html) {
+        var row = document.createElement("div");
+        row.className = "message " + role;
+        var bubble = document.createElement("div");
+        bubble.className = "bubble";
+        if (html) bubble.innerHTML = md(content);
+        else bubble.textContent = content;
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+        requestAnimationFrame(function() { chatBody.scrollTop = chatBody.scrollHeight; });
+      }
+
+      function showMessages() {
+        welcomeBlock.style.display = "none";
+        messagesEl.classList.add("visible");
+      }
+
+      function send(text) {
+        if (!text || busy) return;
+        busy = true;
+        sendBtn.disabled = true;
+        showMessages();
+        addMessage("user", text, false);
+
+        var typing = document.createElement("div");
+        typing.className = "message bot typing";
+        typing.innerHTML = '<div class="bubble"><span></span><span></span><span></span></div>';
+        messagesEl.appendChild(typing);
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        setTimeout(function() {
+          typing.remove();
+          addMessage("bot", reply(text), true);
+          busy = false;
+          sendBtn.disabled = !input.value.trim();
+        }, 800 + Math.random() * 600);
+      }
+
+      form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        var v = input.value.trim();
+        if (!v) return;
+        send(v);
+        input.value = "";
+        sendBtn.disabled = true;
+        input.focus();
+      });
+      input.addEventListener("input", function() {
+        sendBtn.disabled = !input.value.trim() || busy;
+      });
+
+      document.querySelectorAll(".suggestion-card").forEach(function(card) {
+        card.addEventListener("click", function() { send(card.getAttribute("data-text")); });
+      });
+
+      document.getElementById("new-chat-btn").addEventListener("click", function(e) {
+        e.preventDefault();
+        messagesEl.innerHTML = "";
+        messagesEl.classList.remove("visible");
+        welcomeBlock.style.display = "";
+        document.querySelectorAll(".conversation-item").forEach(function(c) { c.classList.remove("active"); });
+        setTab("chat");
+        closeSidebar();
+        playSuggestionsLoading();
+        loadMenusRemaining();
+        input.focus();
+      });
+
+      document.querySelectorAll(".conversation-item").forEach(function(item) {
+        item.addEventListener("click", function(e) {
+          e.preventDefault();
+          document.querySelectorAll(".conversation-item").forEach(function(c) { c.classList.remove("active"); });
+          item.classList.add("active");
+          messagesEl.innerHTML = "";
+          showMessages();
+          addMessage("user", item.textContent.trim(), false);
+          addMessage("bot", "Olá! 👋 Como posso ajudar com sua alimentação hoje?", true);
+          setTab("chat");
+          closeSidebar();
+        });
+      });
+
+      playSuggestionsLoading();
+
+      /* ---------- Despensa ---------- */
+      var PANTRY_KEY = "nutria_pantry_v2";
+      var CATS = ["Mantimentos", "Refrigerados", "Hortifruti", "Temperos", "Outros"];
+      var pantry = null;
+      try { pantry = JSON.parse(localStorage.getItem(PANTRY_KEY)); } catch (e) {}
+      if (!Array.isArray(pantry)) {
+        pantry = [
+          { name: "Arroz",   qty: 1,   unit: "kg", cat: "Mantimentos" },
+          { name: "Feijão",  qty: 500, unit: "g",  cat: "Mantimentos" },
+          { name: "Azeite",  qty: 500, unit: "ml", cat: "Temperos" },
+          { name: "Ovos",    qty: 12,  unit: "un", cat: "Refrigerados" },
+          { name: "Frango",  qty: 800, unit: "g",  cat: "Refrigerados" },
+          { name: "Tomate",  qty: 4,   unit: "un", cat: "Hortifruti" }
+        ];
+      }
+      var pantryList = document.getElementById("pantry-list");
+      var pantryCount = document.getElementById("pantry-count");
+      var pantryEmpty = document.getElementById("pantry-empty");
+      var pantryInput = document.getElementById("pantry-input");
+      var pantryQty = document.getElementById("pantry-qty");
+      var pantryUnit = document.getElementById("pantry-unit");
+      var pantrySelect = document.getElementById("pantry-category");
+
+      function savePantry() {
+        try { localStorage.setItem(PANTRY_KEY, JSON.stringify(pantry)); } catch (e) {}
+      }
+      function fmtQty(qty) {
+        var n = parseFloat(qty);
+        if (isNaN(n)) return "";
+        return String(n % 1 === 0 ? n : Math.round(n * 100) / 100);
+      }
+      function renderPantry() {
+        pantryList.innerHTML = "";
+        pantryCount.textContent = pantry.length ? pantry.length + (pantry.length === 1 ? " item" : " itens") : "";
+        pantryEmpty.style.display = pantry.length ? "none" : "block";
+
+        CATS.forEach(function(cat) {
+          var items = pantry.filter(function(i) { return i.cat === cat; });
+          if (!items.length) return;
+          var label = document.createElement("div");
+          label.className = "pantry-group-label";
+          label.textContent = cat;
+          pantryList.appendChild(label);
+
+          items.forEach(function(item) {
+            var row = document.createElement("div");
+            row.className = "pantry-item";
+
+            var name = document.createElement("span");
+            name.className = "p-name";
+            name.textContent = item.name;
+            row.appendChild(name);
+
+            if (item.qty !== "" && item.qty != null) {
+              var qtyChip = document.createElement("span");
+              qtyChip.className = "p-qty";
+              qtyChip.textContent = fmtQty(item.qty) + " " + item.unit;
+              row.appendChild(qtyChip);
+            }
+
+            var badge = document.createElement("span");
+            badge.className = "p-cat";
+            badge.textContent = item.cat;
+            row.appendChild(badge);
+
+            var rm = document.createElement("button");
+            rm.className = "p-remove";
+            rm.setAttribute("aria-label", "Remover " + item.name);
+            rm.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            rm.addEventListener("click", function() {
+              pantry = pantry.filter(function(i) { return i !== item; });
+              savePantry();
+              renderPantry();
+            });
+            row.appendChild(rm);
+
+            pantryList.appendChild(row);
+          });
+        });
+      }
+      document.getElementById("pantry-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        var name = pantryInput.value.trim();
+        if (!name) { pantryInput.focus(); return; }
+        var qty = fmtQty(pantryQty.value);
+        pantry.push({
+          name: name,
+          qty: qty,
+          unit: pantryUnit.value,
+          cat: pantrySelect.value
+        });
+        savePantry();
+        renderPantry();
+        pantryInput.value = "";
+        pantryQty.value = "";
+        pantryInput.focus();
+      });
+      renderPantry();
+    })();
+    </script>
+  </body>
+</html>

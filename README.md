@@ -36,6 +36,25 @@ mix phx.server   # http://localhost:4000
 
 O CSS é compilado automaticamente via Tailwind (watcher do `phx.server`).
 
+## Aplicativo nativo (Capacitor)
+
+O app roda dentro de um shell nativo via [Capacitor](https://capacitorjs.com/), servindo o LiveView existente (sem downgrade do Phoenix). O `web/` é um placeholder; o app real é carregado a partir do servidor via `server.url`.
+
+```bash
+npm install
+npx cap add android   # uma vez
+npx cap add ios       # uma vez (requer macOS/Xcode)
+npx cap sync          # copia a config para as plataformas
+npm run android       # abre no Android Studio
+npm run ios           # abre no Xcode
+```
+
+Aponte o servidor Phoenix para o host do dispositivo/emulador na `capacitor.config.ts` (padrão: `http://10.0.2.2:4000`, o `localhost` do emulador Android). Use `CAPACITOR_SERVER_URL` para sobrescrever:
+
+```bash
+CAPACITOR_SERVER_URL=http://192.168.0.10:4000 npx cap sync
+```
+
 ### Variáveis de ambiente
 
 | Variável | Uso | Padrão |

@@ -1,6 +1,7 @@
 # Dependencies
 /deps/
 /old/frontend/node_modules/
+/node_modules/
 
 # Build artifacts
 /_build/
@@ -11,6 +12,11 @@
 # Frontend build
 /old/frontend/.expo/
 /old/frontend/web-build/
+
+# Capacitor / Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Temp / system
 /tmp/

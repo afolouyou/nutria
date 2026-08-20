@@ -1,0 +1,32 @@
+{
+  "name": "nutria",
+  "version": "1.0.0",
+  "description": "Assistente nutricional com IA — bate-papo com streaming, despensa inteligente, sugestão de receitas e perfil com foto. Aplicação **Elixir/Phoenix** (umbrella).",
+  "main": "index.js",
+  "scripts": {
+    "android": "cap run android",
+    "ios": "cap run ios",
+    "sync": "cap sync",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/afolouyou/nutria.git"
+  },
+  "keywords": [],
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/afolouyou/nutria/issues"
+  },
+  "homepage": "https://github.com/afolouyou/nutria#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "typescript": "^7.0.2"
+  }
+}

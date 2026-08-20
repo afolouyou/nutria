@@ -20,12 +20,12 @@ defmodule NutriaWeb.SessionController do
         |> put_session("auth_token", token)
         |> redirect(to: "/chat")
 
-      {:error, :unauthorized, message} ->
+      {:error, :not_found, message} ->
         conn
         |> put_flash(:error, message)
         |> redirect(to: "/login")
 
-      {:error, _status, message} ->
+      {:error, :unauthorized, message} ->
         conn
         |> put_flash(:error, message)
         |> redirect(to: "/login")
@@ -46,11 +46,6 @@ defmodule NutriaWeb.SessionController do
         |> redirect(to: "/chat")
 
       {:error, :bad_request, message} ->
-        conn
-        |> put_flash(:error, message)
-        |> redirect(to: "/login")
-
-      {:error, _status, message} ->
         conn
         |> put_flash(:error, message)
         |> redirect(to: "/login")

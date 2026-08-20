@@ -52,6 +52,20 @@ Hooks.StreamingText = {
   }
 }
 
+Hooks.SuggestionsLoading = {
+  mounted() {
+    this.grid = document.getElementById("suggestions-grid")
+    this.loading = document.getElementById("suggestions-loading")
+    this.timer = setTimeout(() => {
+      if (this.loading) this.loading.style.display = "none"
+      if (this.grid) this.grid.style.display = "grid"
+    }, 1600)
+  },
+  destroyed() {
+    if (this.timer) clearTimeout(this.timer)
+  }
+}
+
 Hooks.ThemeToggle = {
   mounted() {
     this.updateState()

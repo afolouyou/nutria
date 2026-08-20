@@ -10,22 +10,32 @@ defmodule NutriaWeb.PantryLive.Index do
   alias Nutria.Recipes
 
   @units ["g", "kg", "ml", "l", "un"]
+  @categories ["Mantimentos", "Refrigerados", "Hortifruti", "Temperos", "Outros"]
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:items, [])
-     |> assign(:name, "")
-     |> assign(:qty, "")
-     |> assign(:unit, "kg")
-     |> assign(:notes, "")
-      |> assign(:loading, false)
-      |> assign(:adding, false)
-      |> assign(:result, nil)
-      |> assign(:units, @units)
-      |> assign(:active_tab, "pantry")
-      |> load_items()}
+      |> assign(:items, [])
+      |> assign(:name, "")
+      |> assign(:qty, "")
+      |> assign(:unit, "kg")
+      |> assign(:category, "Outros")
+      |> assign(:edit_item_id, nil)
+      |> assign(:edit_name, "")
+      |> assign(:edit_qty, "")
+      |> assign(:edit_unit, "kg")
+      |> assign(:edit_category, "Outros")
+      |> assign(:edit_open, false)
+      |> assign(:saving_edit, false)
+      |> assign(:notes, "")
+       |> assign(:loading, false)
+       |> assign(:adding, false)
+       |> assign(:result, nil)
+       |> assign(:units, @units)
+       |> assign(:categories, @categories)
+       |> assign(:active_tab, "pantry")
+       |> load_items()}
   end
 
   @impl true
@@ -34,12 +44,13 @@ defmodule NutriaWeb.PantryLive.Index do
   end
 
   @impl true
-  def handle_event("update_field", %{"field" => field, "value" => value}, socket) do
-    {:noreply, assign(socket, String.to_existing_atom(field), value)}
-  end
-
-  def handle_event("select_unit", %{"unit" => unit}, socket) do
-    {:noreply, assign(socket, :unit, unit)}
+  def handle_event("update_form", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:name, Map.get(params, "name", socket.assigns.name))
+     |> assign(:qty, Map.get(params, "qty", socket.assigns.qty))
+     |> assign(:unit, Map.get(params, "unit", socket.assigns.unit))
+     |> assign(:category, Map.get(params, "category", socket.assigns.category))}
   end
 
   def handle_event("add_item", _params, socket) do
@@ -47,29 +58,39 @@ defmodule NutriaWeb.PantryLive.Index do
     name = socket.assigns.name |> String.trim()
     qty_str = socket.assigns.qty |> String.trim() |> String.replace(",", ".")
     unit = socket.assigns.unit
+    category = socket.assigns.category
 
-    case Float.parse(qty_str) do
-      {qty, ""} when qty > 0 ->
-        socket = assign(socket, :adding, true)
+    cond do
+      qty_str == "" ->
+        {:noreply, put_flash(socket, :error, "Quantidade invalida")}
 
-        case Pantry.add_item(user.id, %{"name" => name, "quantity" => qty, "unit" => unit}) do
-          {:ok, _item} ->
-            {:noreply,
-             socket
-             |> assign(:adding, false)
-             |> assign(:name, "")
-             |> assign(:qty, "")
-             |> load_items()}
+      not Regex.match?(~r/^\d+(\.\d+)?$/, qty_str) ->
+        {:noreply, put_flash(socket, :error, "Quantidade deve conter apenas numeros")}
 
-          {:error, _, message} ->
-            {:noreply,
-             socket
-             |> assign(:adding, false)
-             |> put_flash(:error, message)}
+      true ->
+        case Float.parse(qty_str) do
+          {qty, ""} when qty > 0 ->
+            socket = assign(socket, :adding, true)
+
+            case Pantry.add_item(user.id, %{"name" => name, "quantity" => qty, "unit" => unit, "category" => category}) do
+              {:ok, _item} ->
+                {:noreply,
+                 socket
+                 |> assign(:adding, false)
+                 |> assign(:name, "")
+                 |> assign(:qty, "")
+                 |> load_items()}
+
+              {:error, _, message} ->
+                {:noreply,
+                 socket
+                 |> assign(:adding, false)
+                 |> put_flash(:error, message)}
+            end
+
+          _ ->
+            {:noreply, put_flash(socket, :error, "Quantidade invalida")}
         end
-
-      _ ->
-        {:noreply, put_flash(socket, :error, "Quantidade inválida")}
     end
   end
 
@@ -79,6 +100,79 @@ defmodule NutriaWeb.PantryLive.Index do
     case Pantry.delete_item(id, user.id) do
       :ok -> {:noreply, load_items(socket)}
       {:error, _, msg} -> {:noreply, put_flash(socket, :error, msg)}
+    end
+  end
+
+  def handle_event("open_edit", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.items, &(&1["id"] == id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Item não encontrado")}
+
+      item ->
+        {:noreply,
+         socket
+         |> assign(:edit_item_id, id)
+         |> assign(:edit_name, item["name"])
+         |> assign(:edit_qty, format_qty(item["quantity"]))
+         |> assign(:edit_unit, item["unit"])
+         |> assign(:edit_category, item["category"])
+         |> assign(:edit_open, true)}
+    end
+  end
+
+  def handle_event("close_edit", _params, socket) do
+    {:noreply, assign(socket, :edit_open, false)}
+  end
+
+  def handle_event("update_edit_form", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:edit_name, Map.get(params, "name", socket.assigns.edit_name))
+     |> assign(:edit_qty, Map.get(params, "qty", socket.assigns.edit_qty))
+     |> assign(:edit_unit, Map.get(params, "unit", socket.assigns.edit_unit))
+     |> assign(:edit_category, Map.get(params, "category", socket.assigns.edit_category))}
+  end
+
+  def handle_event("save_edit", _params, socket) do
+    user = socket.assigns.current_user
+    name = socket.assigns.edit_name |> String.trim()
+    qty_str = socket.assigns.edit_qty |> String.trim() |> String.replace(",", ".")
+
+    cond do
+      qty_str == "" ->
+        {:noreply, put_flash(socket, :error, "Quantidade invalida")}
+
+      not Regex.match?(~r/^\d+(\.\d+)?$/, qty_str) ->
+        {:noreply, put_flash(socket, :error, "Quantidade deve conter apenas numeros")}
+
+      true ->
+        case Float.parse(qty_str) do
+          {qty, ""} when qty > 0 ->
+            socket = assign(socket, :saving_edit, true)
+
+            case Pantry.update_item(user.id, socket.assigns.edit_item_id, %{
+                   "name" => name,
+                   "quantity" => qty,
+                   "unit" => socket.assigns.edit_unit,
+                   "category" => socket.assigns.edit_category
+                 }) do
+              {:ok, _item} ->
+                {:noreply,
+                 socket
+                 |> assign(:saving_edit, false)
+                 |> assign(:edit_open, false)
+                 |> load_items()}
+
+              {:error, _, message} ->
+                {:noreply,
+                 socket
+                 |> assign(:saving_edit, false)
+                 |> put_flash(:error, message)}
+            end
+
+          _ ->
+            {:noreply, put_flash(socket, :error, "Quantidade invalida")}
+        end
     end
   end
 
@@ -129,180 +223,101 @@ defmodule NutriaWeb.PantryLive.Index do
     assign(socket, :items, items)
   end
 
+  defp format_qty(quantity) when is_float(quantity) do
+    if quantity == trunc(quantity), do: Integer.to_string(trunc(quantity)), else: :erlang.float_to_binary(quantity, [:compact, decimals: 2])
+  end
+
+  defp format_qty(quantity), do: to_string(quantity)
+
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col h-full">
-      <header class="px-6 py-4 border-b border-[#e9ecef]">
-        <h1 class="font-semibold text-base">Minha Despensa</h1>
+    <div class="view active screen-shell pantry-shell">
+      <button :if={@edit_open} type="button" class="drawer-scrim" phx-click="close_edit" aria-label="Fechar edição" />
+
+      <header class="chat-header">
+        <span>Despensa</span>
       </header>
 
-      <div class="flex-1 overflow-y-auto px-6 py-6">
-        <div class="max-w-[720px] mx-auto space-y-6">
-          <!-- Add Item Form -->
-          <div class="bg-[#f0f0f0] border border-[#dee2e6] rounded-xl p-4">
-            <h2 class="text-sm font-semibold text-[#333] mb-3">Adicionar item</h2>
-            <form phx-submit="add_item" class="space-y-3">
-              <input
-                type="text"
-                name="name"
-                value={@name}
-                placeholder="Ex.: Arroz"
-                phx-change="update_field"
-                phx-value-field="name"
-                class="w-full px-3 py-2.5 border border-[#dee2e6] rounded-lg text-sm bg-[#f8f9fa] focus:border-[#2d6a4f] focus:bg-white outline-none transition-colors"
-              />
-              <div class="flex gap-3">
-                <input
-                  type="text"
-                  name="qty"
-                  value={@qty}
-                  placeholder="Quantidade"
-                  phx-change="update_field"
-                  phx-value-field="qty"
-                  class="flex-1 px-3 py-2.5 border border-[#dee2e6] rounded-lg text-sm bg-[#f8f9fa] focus:border-[#2d6a4f] focus:bg-white outline-none transition-colors"
-                />
-                <div class="flex gap-1">
-                  <%= for u <- @units do %>
-                    <button
-                      type="button"
-                      phx-click="select_unit"
-                      phx-value-unit={u}
-                      class={[
-                        "w-10 h-10 rounded-lg text-xs font-medium transition-colors",
-                        if(@unit == u,
-                          do: "bg-[#2d6a4f] text-white",
-                          else: "bg-[#f8f9fa] text-[#555] hover:bg-[#e9ecef]"
-                        )
-                      ]}
-                    >
-                      <%= u %>
-                    </button>
-                  <% end %>
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={@adding or @name == "" or @qty == ""}
-                class="w-full py-2.5 bg-[#2d6a4f] text-white rounded-lg text-sm font-medium hover:bg-[#1b4332] transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style="background-color: #2d6a4f"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 8v8M8 12h8"/>
-                </svg>
-                <%= if @adding, do: "Adicionando...", else: "Adicionar à despensa" %>
-              </button>
-            </form>
-          </div>
+      <div class="pantry-body">
+        <div class="pantry-inner">
+          <p class="pantry-sub">Guarde o que você tem em casa, com quantidades, para controlar seus alimentos.</p>
 
-          <!-- Items List -->
-          <div>
-            <h2 class="text-xs font-semibold text-[#888] uppercase tracking-wider mb-2">
-              Itens (<%= length(@items) %>)
-            </h2>
-
-            <%= if @items == [] do %>
-              <div class="flex flex-col items-center py-12 text-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-14 h-14 text-[#ccc] mb-3">
-                  <path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                  <line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-                <p class="text-[#888] text-sm">Despensa vazia</p>
-                <p class="text-[#aaa] text-xs mt-1">Adicione itens acima para começar.</p>
-              </div>
-            <% else %>
-              <div class="space-y-1.5">
-                <%= for item <- @items do %>
-                  <div class={[
-                    "flex items-center gap-3 px-3 py-3 rounded-xl border transition-colors group",
-                    if(item["low_stock"],
-                      do: "border-[#fc7100] bg-[#fff8f0]",
-                      else: "border-[#dee2e6] bg-white hover:border-[#2d6a4f]"
-                    )
-                  ]}>
-                    <div class="flex-1 min-w-0">
-                      <span class="text-sm font-medium text-[#1a1a1a]"><%= item["name"] %></span>
-                      <span class="text-sm text-[#666] ml-2">
-                        <%= item["quantity"] %> <%= item["unit"] %>
-                      </span>
-                    </div>
-                    <%= if item["low_stock"] do %>
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#ffe6d2] text-[#fc7100]">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3">
-                          <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                        </svg>
-                        Acabando
-                      </span>
-                    <% end %>
-                    <button
-                      phx-click="delete_item"
-                      phx-value-id={item["id"]}
-                      class="p-1.5 text-[#888] hover:text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
-                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-
-          <!-- Notes -->
-          <div>
-            <textarea
-              name="notes"
-              value={@notes}
-              placeholder="Observações para a receita (opcional)"
-              phx-change="update_field"
-              phx-value-field="notes"
-              rows="3"
-              class="w-full px-3 py-2.5 border border-[#dee2e6] rounded-lg text-sm bg-[#f8f9fa] focus:border-[#2d6a4f] focus:bg-white outline-none transition-colors resize-none"
+          <form phx-submit="add_item" phx-change="update_form" class="pantry-form pantry-form-pill">
+            <input
+              type="text"
+              name="name"
+              value={@name}
+              maxlength="30"
+              placeholder="Ex.: arroz, ovos, tomate..."
+              class="chat-input pantry-name"
             />
-          </div>
 
-          <!-- Generate Button -->
-          <button
-            phx-click="generate_recipe"
-            disabled={@loading or @items == []}
-            class="w-full py-2.5 bg-[#fc7100] text-white rounded-lg text-sm font-medium hover:bg-[#e06500] transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            style="background-color: #fc7100"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-              <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
-              <path d="M18 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>
-            </svg>
-            <%= if @loading, do: "Gerando receita...", else: "Gerar receita com IA" %>
-          </button>
+            <div class="pantry-fields">
+              <input type="text" name="qty" value={@qty} maxlength="4" inputmode="decimal" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9.,]/g,'').slice(0,4)" placeholder="Qtd." class="pantry-qty" />
+              <select name="unit" class="pantry-select pantry-unit">
+                <%= for u <- @units do %>
+                  <option value={u} selected={@unit == u}><%= u %></option>
+                <% end %>
+              </select>
+              <select name="category" class="pantry-select pantry-cat">
+                <%= for category <- @categories do %>
+                  <option value={category} selected={@category == category}><%= category %></option>
+                <% end %>
+              </select>
+            </div>
 
-          <!-- Recipe Result -->
-          <%= if @result do %>
-            <div class="bg-white border border-[#dee2e6] rounded-xl p-5">
-              <div class="flex items-center gap-2 mb-3">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-[#2d6a4f]">
-                  <path d="M3 3h18v18H3zM3 9h18M9 3v18"/>
-                </svg>
-                <h3 class="font-semibold text-[#1a1a1a]">Receita do NutrIA</h3>
-              </div>
-              <div class="text-sm text-[#333] leading-relaxed whitespace-pre-wrap mb-4">
-                <%= @result["suggestions"] %>
-              </div>
+            <button type="submit" class="send-btn pantry-add-btn" aria-label="Adicionar item" disabled={@adding or @name == "" or @qty == ""}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </form>
 
-              <%= if @result["consumed"] != [] do %>
-                <div class="bg-[#f0f7f4] rounded-lg p-3">
-                  <h4 class="text-xs font-semibold text-[#2d6a4f] uppercase tracking-wider mb-2">Consumido da despensa</h4>
-                  <div class="space-y-1">
-                    <%= for item <- @result["consumed"] do %>
-                      <div class="text-sm text-[#333]">
-                        <%= item["name"] %> — <%= item["quantity"] %> <%= item["unit"] %>
-                      </div>
-                    <% end %>
-                  </div>
+          <div class="pantry-count">Itens (<%= length(@items) %>)</div>
+
+          <%= if @items == [] do %>
+            <div class="pantry-empty">Sua despensa esta vazia. Adicione o primeiro item acima.</div>
+          <% else %>
+            <div class="pantry-list">
+              <%= for item <- @items do %>
+                <div class="pantry-item screen-card">
+                  <span class="p-name"><%= item["name"] %></span>
+                  <span class="p-qty"><%= item["quantity"] %> <%= item["unit"] %></span>
+                  <span class="p-cat"><%= item["category"] %></span>
+                  <button phx-click="open_edit" phx-value-id={item["id"]} class="p-edit" aria-label="Editar item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+                  </button>
+                  <button phx-click="delete_item" phx-value-id={item["id"]} class="p-remove" aria-label="Remover item">✕</button>
                 </div>
               <% end %>
+            </div>
+          <% end %>
+
+          <%= if @edit_open do %>
+            <div class="pantry-modal screen-card">
+              <div class="pantry-modal-header">
+                <div class="row-title">Editar item</div>
+                <button type="button" class="icon-btn" phx-click="close_edit" aria-label="Fechar">✕</button>
+              </div>
+
+              <form phx-submit="save_edit" phx-change="update_edit_form" class="pantry-form pantry-edit-form">
+                <input type="text" name="name" value={@edit_name} maxlength="30" placeholder="Ex.: arroz, ovos, tomate..." class="chat-input pantry-name" />
+
+                <div class="pantry-fields">
+                  <input type="text" name="qty" value={@edit_qty} maxlength="4" inputmode="decimal" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9.,]/g,'').slice(0,4)" placeholder="Qtd." class="pantry-qty" />
+                  <select name="unit" class="pantry-select pantry-unit">
+                    <%= for u <- @units do %>
+                      <option value={u} selected={@edit_unit == u}><%= u %></option>
+                    <% end %>
+                  </select>
+                  <select name="category" class="pantry-select pantry-cat">
+                    <%= for category <- @categories do %>
+                      <option value={category} selected={@edit_category == category}><%= category %></option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <button type="submit" class="pantry-save-btn" disabled={@saving_edit or @edit_name == "" or @edit_qty == ""}>Salvar alteracoes</button>
+              </form>
             </div>
           <% end %>
         </div>

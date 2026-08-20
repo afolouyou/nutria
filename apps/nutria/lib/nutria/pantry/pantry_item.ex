@@ -24,6 +24,7 @@ defmodule Nutria.Pantry.PantryItem do
     item
     |> cast(attrs, [:name, :quantity, :unit, :category, :user_id])
     |> validate_required([:name, :quantity, :unit, :user_id])
+    |> validate_length(:name, max: 30)
     |> validate_number(:quantity, greater_than: 0)
     |> validate_inclusion(:unit, @valid_units)
     |> validate_inclusion(:category, @valid_categories)

@@ -47,25 +47,28 @@ defmodule NutriaWeb.HistoryLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="view active">
-      <header class="chat-header">Histórico</header>
+    <div class="view active screen-shell">
+      <header class="chat-header">
+        <img src={~p"/images/logo-64.png"} alt="" class="header-logo" aria-hidden="true" />
+        <span>Histórico</span>
+      </header>
 
-      <div class="history-body">
-        <div class="history-inner">
+      <div class="screen-body">
+        <div class="screen-inner">
           <%= if @loading do %>
-            <div class="pantry-empty">Carregando...</div>
+            <div class="empty-state">Carregando...</div>
           <% else %>
             <%= if @items == [] do %>
-              <div class="pantry-empty">Nenhuma conversa ainda</div>
+              <div class="empty-state">Nenhuma conversa ainda</div>
             <% else %>
-              <div class="pantry-list">
+              <div class="history-list">
                 <%= for conv <- @items do %>
-                  <div class="history-item pantry-item">
-                    <.link navigate={~p"/chat/#{conv["id"]}"} class="p-name">
-                      <%= conv["title"] %>
-                      <div class="settings-user-email"><%= format_date(conv["created_at"]) %></div>
+                  <div class="history-row screen-card">
+                    <.link navigate={~p"/chat/#{conv["id"]}"} class="row-main history-main">
+                      <div class="row-title"><%= conv["title"] %></div>
+                      <div class="row-subtitle"><%= format_date(conv["created_at"]) %></div>
                     </.link>
-                    <button phx-click="delete_conversation" phx-value-id={conv["id"]} class="p-remove">✕</button>
+                    <button phx-click="delete_conversation" phx-value-id={conv["id"]} class="icon-btn" aria-label="Excluir conversa">✕</button>
                   </div>
                 <% end %>
               </div>

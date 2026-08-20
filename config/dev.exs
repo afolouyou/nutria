@@ -10,7 +10,7 @@ config :nutria, Nutria.Repo,
   pool_size: 10
 
 config :nutria_app, NutriaWeb.Endpoint,
-  http: [ip: {0, 0, 0, 0}, port: 4000],
+  http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT", "4000"))],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

@@ -13,24 +13,28 @@ defmodule NutriaWeb.ChatLive.Index do
   @suggestions [
     "Analise meu almoço: arroz, feijão, frango grelhado e salada",
     "Crie um plano alimentar para emagrecer 3kg",
-    "Dicas para reduzir açúcar no dia a dia",
     "O que devo comer no café da manhã?"
   ]
 
   @impl true
   def mount(_params, _session, socket) do
+    user = socket.assigns.current_user
+
     {:ok,
      socket
      |> assign(:messages, [])
      |> assign(:current_conversation_id, nil)
+     |> assign(:conversations, if(user, do: refresh_conversations(user.id), else: []))
+     |> assign(:sidebar_open, false)
      |> assign(:sending, false)
+     |> assign(:menus_remaining, nil)
      |> assign(:streaming_text, "")
-     |> assign(:streaming_buffer, "")
-     |> assign(:stream_complete, false)
-      |> assign(:thinking_title, "")
-      |> assign(:suggestions, @suggestions)
-      |> assign(:llm_mode, :fast)
-      |> assign(:active_tab, "chat")}
+      |> assign(:streaming_buffer, "")
+      |> assign(:stream_complete, false)
+     |> assign(:thinking_title, "")
+     |> assign(:suggestions, @suggestions)
+     |> assign(:llm_mode, :fast)
+     |> assign(:active_tab, "chat")}
   end
 
   @impl true
@@ -46,6 +50,7 @@ defmodule NutriaWeb.ChatLive.Index do
            socket
            |> assign(:current_conversation_id, id)
            |> assign(:messages, messages)
+           |> assign(:sidebar_open, false)
            |> assign(:conversations, refresh_conversations(user.id))}
 
         {:error, _, _} ->
@@ -57,10 +62,14 @@ defmodule NutriaWeb.ChatLive.Index do
   end
 
   def handle_params(_params, _uri, socket) do
+    user = socket.assigns.current_user
+
     {:noreply,
      socket
      |> assign(:current_conversation_id, nil)
-     |> assign(:messages, [])}
+     |> assign(:messages, [])
+     |> assign(:sidebar_open, false)
+     |> assign(:conversations, if(user, do: refresh_conversations(user.id), else: []))}
   end
 
   @impl true
@@ -118,12 +127,28 @@ defmodule NutriaWeb.ChatLive.Index do
     {:noreply, assign(socket, :llm_mode, new_mode)}
   end
 
+  def handle_event("toggle_sidebar", _params, socket) do
+    {:noreply, update(socket, :sidebar_open, &(!&1))}
+  end
+
+  def handle_event("close_sidebar", _params, socket) do
+    {:noreply, assign(socket, :sidebar_open, false)}
+  end
+
+  def handle_event("open_conversation", %{"id" => id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:sidebar_open, false)
+     |> push_navigate(to: ~p"/chat/#{id}")}
+  end
+
   def handle_event("new_chat", _params, socket) do
     user = socket.assigns.current_user
 
     {:noreply,
      socket
      |> assign(:current_conversation_id, nil)
+     |> assign(:sidebar_open, false)
      |> assign(:messages, [])
      |> assign(:conversations, if(user, do: refresh_conversations(user.id), else: []))
      |> push_navigate(to: ~p"/chat")}
@@ -403,148 +428,139 @@ defmodule NutriaWeb.ChatLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div style="display:flex;flex-direction:column;height:100%">
-      <header class="chat-header">
-        Chat
-      </header>
+    <div class="view active screen-shell chat-shell">
+      <button
+        :if={@sidebar_open}
+        type="button"
+        class="drawer-scrim"
+        phx-click="close_sidebar"
+        aria-label="Fechar menu"
+      />
 
-      <%= if @messages == [] and @streaming_text == "" do %>
-        <div class="chat-body">
-          <h1 class="welcome-title">Olá! Eu sou o NutrIA.</h1>
-          <p class="welcome-subtitle">
-            Pergunte sobre nutrição, peça análises de refeições, dicas ou planos alimentares.
-          </p>
+      <aside class={["chat-drawer", @sidebar_open && "open"]}>
+        <button type="button" class="new-chat-btn" phx-click="new_chat">
+          <span class="plus">+</span>
+          Nova conversa
+        </button>
 
-          <div class="suggestions-grid">
-            <%= for suggestion <- @suggestions do %>
-              <.suggestion_card text={suggestion} phx_click="suggestion_click" />
-            <% end %>
-          </div>
-        </div>
-
-        <div class="input-area">
-          <div class="mode-toggle-bar">
-            <button
-              type="button"
-              class={["mode-btn", @llm_mode == :fast && "active"]}
-              phx-click="toggle_mode"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Basic
-            </button>
-            <button
-              type="button"
-              class={["mode-btn", @llm_mode == :smart && "active"]}
-              phx-click="toggle_mode"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"/><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"/></svg>
-              Esperto
-            </button>
-          </div>
-          <div class="input-wrapper">
-            <form phx-submit="send_message" class="chat-form">
-              <input
-                type="text"
-                name="text"
-                class="chat-input"
-                placeholder="Pergunte ao NutrIA..."
-                disabled={@sending}
-                autocomplete="off"
-              />
+        <div class="conversations-list">
+          <%= if @conversations == [] do %>
+            <div class="drawer-empty">Nenhuma conversa ainda.</div>
+          <% else %>
+            <%= for conversation <- @conversations do %>
               <button
-                type="submit"
-                class="send-btn"
-                disabled={@sending}
-                aria-label="Enviar"
+                type="button"
+                phx-click="open_conversation"
+                phx-value-id={conversation["id"]}
+                class={[
+                  "conversation-item",
+                  @current_conversation_id == conversation["id"] && "active"
+                ]}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                <%= conversation["title"] %>
               </button>
-            </form>
-          </div>
+            <% end %>
+          <% end %>
         </div>
-      <% else %>
-        <div class="messages-container" id="messages-container" phx-hook="ScrollBottom">
-          <div class="messages-list">
-            <%= for msg <- @messages do %>
-              <div class={["message", msg["role"]]}>
-                <div class="message-bubble">
-                  <%= if msg["role"] == "assistant" do %>
-                    <%= raw(render_markdown(msg["text"])) %>
-                  <% else %>
-                    <%= msg["text"] %>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
+      </aside>
 
-            <%= if @streaming_text != "" do %>
-              <div class="message assistant">
-                <div class="message-bubble streaming-cursor">
-                  <%= raw(render_streaming(@streaming_text)) %>
-                </div>
-              </div>
-            <% end %>
+      <header class="chat-header">
+        <button type="button" class="menu-btn" phx-click="toggle_sidebar" aria-label="Abrir menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+        </button>
+        <span>Chat</span>
+      </header>
+      <div class="chat-body">
+        <%= if @messages == [] and @streaming_text == "" do %>
+          <div class="welcome-block">
+            <h1 class="welcome-title">Olá! Eu sou o NutrIA.</h1>
 
-            <%= if @sending and @streaming_text == "" do %>
-              <div class="message assistant">
-              <%= if @thinking_title != "" do %>
-                <div class="thinking-badge">
-                  <span class="thinking-icon">💭</span>
-                  Pensando: <%= @thinking_title %>
-                </div>
-              <% else %>
-                <div class="loading-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+              <div class="suggestions-section">
+                <div class="suggestions-loading" id="suggestions-loading" phx-hook="SuggestionsLoading">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g fill="#fc7100" stroke="#fc7100" stroke-width="15"><circle r="20" cx="140" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 80;0 80;0 80;-80 80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle><circle r="20" cx="60" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0;80 0;80 0;80 0;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle><circle r="20" cx="60" cy="140"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0 ;0 0;0 -80;0 -80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle></g></svg>
+                <span>Sugerindo opções:</span>
+              </div>
+
+              <div class="suggestions-grid" id="suggestions-grid" style="display:none">
+                <%= for suggestion <- @suggestions do %>
+                  <.suggestion_card text={suggestion} phx_click="suggestion_click" />
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <div class="messages-container" id="messages-container" phx-hook="ScrollBottom">
+            <div class="messages-list">
+              <%= for msg <- @messages do %>
+                <div class={["message", msg["role"]]}>
+                  <div class="message-bubble">
+                    <%= if msg["role"] == "assistant" do %>
+                      <%= raw(render_markdown(msg["text"])) %>
+                    <% else %>
+                      <%= msg["text"] %>
+                    <% end %>
+                  </div>
                 </div>
               <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
 
-        <div class="input-area">
-          <div class="mode-toggle-bar">
-            <button
-              type="button"
-              class={["mode-btn", @llm_mode == :fast && "active"]}
-              phx-click="toggle_mode"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Basic
-            </button>
-            <button
-              type="button"
-              class={["mode-btn", @llm_mode == :smart && "active"]}
-              phx-click="toggle_mode"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"/><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"/></svg>
-              Esperto
-            </button>
+              <%= if @streaming_text != "" do %>
+                <div class="message assistant">
+                  <div class="message-bubble streaming-cursor">
+                    <%= raw(render_streaming(@streaming_text)) %>
+                  </div>
+                </div>
+              <% end %>
+
+              <%= if @sending and @streaming_text == "" do %>
+                <div class="message assistant">
+                  <%= if @thinking_title != "" do %>
+                    <div class="thinking-badge">
+                      <span class="thinking-icon">💭</span>
+                      Pensando: <%= @thinking_title %>
+                    </div>
+                  <% else %>
+                    <div class="loading-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
           </div>
-          <div class="input-wrapper">
-            <form phx-submit="send_message" class="chat-form">
-              <input
-                type="text"
-                name="text"
-                class="chat-input"
-                placeholder="Pergunte ao NutrIA..."
-                disabled={@sending}
-                autocomplete="off"
-              />
-              <button
-                type="submit"
-                class="send-btn"
-                disabled={@sending}
-                aria-label="Enviar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-              </button>
-            </form>
+        <% end %>
+      </div>
+
+      <div class="input-area">
+        <div class="mode-toggle-bar">
+          <div class="menus-remaining">
+            <span>Cardápios restantes: <span class="mr-value"><%= @menus_remaining || "?" %></span></span>
           </div>
+
+          <button
+            type="button"
+            class={[
+              "mode-toggle",
+              @llm_mode == :fast && "mode-basico",
+              @llm_mode == :smart && "mode-smart"
+            ]}
+            phx-click="toggle_mode"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon-basico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon-smart" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7.5L12 20l-3-3.5C7 14.5 5 12 5 9a7 7 0 0 1 7-7z"/><path d="M9 9h.01M15 9h.01M9.5 13a3.5 3.5 0 0 0 5 0"/></svg>
+            <span><%= if @llm_mode == :smart, do: "Smart", else: "Básico" %></span>
+          </button>
         </div>
-      <% end %>
+        <div class="input-wrapper">
+          <form phx-submit="send_message" class="chat-form">
+            <input type="text" name="text" class="chat-input" placeholder="Pergunte ao NutrIA..." disabled={@sending} autocomplete="off" />
+            <button type="submit" class="send-btn" disabled={@sending} aria-label="Enviar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
     """
   end

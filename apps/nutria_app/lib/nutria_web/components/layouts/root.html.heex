@@ -2,10 +2,13 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()} />
     <title>NutrIA</title>
-    <link rel="icon" href={~p"/favicon.ico"} />
+    <link rel="icon" type="image/png" href={~p"/images/logo-32.png"} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script>
       (function() {
         var saved = null
@@ -15,11 +18,11 @@
         document.documentElement.setAttribute("data-theme", theme)
       })()
     </script>
-    <link rel="stylesheet" href={~p"/assets/app.css?v=2"} />
+    <link rel="stylesheet" href={~p"/assets/app.css?v=16"} />
     <script defer src={~p"/assets/phoenix_html.js"}></script>
     <script defer src={~p"/assets/phoenix.js"}></script>
     <script defer src={~p"/assets/phoenix_live_view.js"}></script>
-    <script defer src={~p"/assets/app.js?v=2"}></script>
+    <script defer src={~p"/assets/app.js?v=4"}></script>
   </head>
   <body>
     {@inner_content}

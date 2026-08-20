@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NutrIA — Guia de Estilo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/700.css">
+<style>
+/* ================================================================
+   NUTRIA · GUIA DE ESTILO — tokens oficiais da marca
+   Verde #1b6a26 · Laranja #fc7100 · Branco #FFFFFF · Fonte Poppins
+   ================================================================ */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --green: #1b6a26;
+  --green-dark: #15561d;
+  --green-soft: #e8f5ec;
+  --orange: #fc7100;
+  --orange-dark: #d95f00;
+  --orange-soft: rgba(252,113,0,.14);
+  --white: #ffffff;
+  --bg: #f6f7f6;
+  --surface: #ffffff;
+  --surface-2: #f0f2f0;
+  --border: #e3e6e3;
+  --text: #1c231e;
+  --muted: #6c7570;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+  --shadow-1: 0 1px 3px rgba(10,25,15,.07);
+  --shadow-2: 0 4px 16px rgba(0,0,0,.08);
+  --shadow-3: 0 18px 50px rgba(0,0,0,.22);
+  --scrim: rgba(0,0,0,.4);
+  --ease: cubic-bezier(.4,0,.2,1);
+  --r-sm: 10px; --r-md: 12px; --r-lg: 14px; --r-xl: 22px;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --green: #22c55e;
+  --green-dark: #4ade80;
+  --green-soft: rgba(34,197,94,.14);
+  --orange: #fc7100;
+  --orange-dark: #ff8a2a;
+  --orange-soft: rgba(252,113,0,.16);
+  --white: #ffffff;
+  --bg: #121413;
+  --surface: #1a1d1b;
+  --surface-2: #222624;
+  --border: #2c312e;
+  --text: #e8eae8;
+  --muted: #9aa39d;
+  --danger: #f87171;
+  --danger-soft: rgba(248,113,113,.12);
+  --shadow-1: 0 1px 3px rgba(0,0,0,.4);
+  --shadow-2: 0 4px 16px rgba(0,0,0,.45);
+  --shadow-3: 0 18px 50px rgba(0,0,0,.6);
+  --scrim: rgba(0,0,0,.6);
+  --ease: cubic-bezier(.4,0,.2,1);
+  --r-sm: 10px; --r-md: 12px; --r-lg: 14px; --r-xl: 22px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+svg { flex-shrink: 0; display: block; }
+h1,h2,h3,h4,p { margin: 0; }
+
+/* ============ Topbar ============ */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-logo { width: 44px; height: auto; }
+.topbar-title { font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
+.topbar-title small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.topbar-spacer { flex: 1; }
+
+/* Switch de tema */
+.switch-row { display: inline-flex; align-items: center; gap: 10px; }
+.switch {
+  width: 46px; height: 27px; border-radius: 99px;
+  background: var(--border); border: 0; position: relative;
+  transition: background .25s var(--ease);
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 21px; height: 21px; border-radius: 50%;
+  background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  transition: transform .25s var(--ease);
+}
+[data-theme="dark"] .switch { background: var(--green); }
+[data-theme="dark"] .switch::after { transform: translateX(19px); }
+.switch-label { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+/* ============ Hero (fundo topográfico da marca) ============ */
+.hero {
+  position: relative; overflow: hidden;
+  background: #1b6a26;
+  color: #fff;
+  padding: 64px 20px 72px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.hero .bg-topo { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero-inner { position: relative; z-index: 1; animation: fadeUp .6s var(--ease) both; }
+.hero-logo { width: 150px; height: auto; margin: 0 auto 10px; animation: floaty 5s ease-in-out infinite; }
+.hero h1 {
+  font-size: clamp(34px, 7vw, 52px);
+  font-weight: 700; /* Poppins Negrito */
+  letter-spacing: -.02em;
+}
+.hero h1 em { font-style: normal; color: var(--orange); }
+.hero p { font-size: clamp(14px, 3.5vw, 17px); font-weight: 400; opacity: .9; margin-top: 6px; }
+.hero-chips { display: flex; gap: 8px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.hero-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 99px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  font-size: 12.5px; font-weight: 600; letter-spacing: .03em;
+  backdrop-filter: blur(4px);
+}
+.hero-chip .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
+
+/* ============ Layout das seções ============ */
+.guide { max-width: 980px; margin: 0 auto; padding: 40px 20px 90px; display: flex; flex-direction: column; gap: 26px; }
+.ds-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 26px;
+  box-shadow: var(--shadow-1);
+  animation: fadeUp .5s var(--ease) both;
+}
+.ds-kicker {
+  font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--orange); margin-bottom: 4px;
+}
+.ds-title { font-size: 21px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+.ds-desc { font-size: 13.5px; color: var(--muted); margin-bottom: 20px; max-width: 640px; }
+.ds-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.ds-col { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+.ds-sub { font-size: 13px; font-weight: 600; color: var(--muted); margin: 18px 0 10px; text-transform: uppercase; letter-spacing: .06em; }
+.ds-divider { height: 1px; background: var(--border); margin: 22px 0; }
+
+/* ============ 01 · Cores ============ */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.swatch {
+  border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden;
+  background: var(--surface); padding: 0; text-align: left;
+  transition: transform .18s var(--ease), box-shadow .18s;
+}
+.swatch:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.swatch:active { transform: scale(.97); }
+.swatch-color { height: 74px; }
+.swatch-info { padding: 10px 12px; }
+.swatch-name { font-size: 13px; font-weight: 600; }
+.swatch-hex { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; }
+
+/* ============ 02 · Tipografia ============ */
+.type-sample { border-bottom: 1px dashed var(--border); padding: 14px 0; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.type-sample:last-child { border-bottom: 0; }
+.type-meta { flex: 0 0 150px; font-size: 11.5px; color: var(--muted); font-family: ui-monospace, monospace; }
+.t-logo { font-size: 34px; font-weight: 700; letter-spacing: -.02em; color: var(--green); }
+.t-logo em { font-style: normal; color: var(--orange); }
+.t-h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+.t-h2 { font-size: 21px; font-weight: 600; }
+.t-h3 { font-size: 16px; font-weight: 600; }
+.t-body { font-size: 15px; font-weight: 400; }
+.t-small { font-size: 13px; color: var(--muted); }
+.t-caption { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* ============ 03 · Botões ============ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: var(--r-md);
+  padding: 12px 20px;
+  font-size: 15px; font-weight: 600;
+  transition: background .15s, border-color .15s, color .15s, transform .12s var(--ease), box-shadow .2s, opacity .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: default; pointer-events: none; }
+.btn-primary { background: var(--green); color: #fff; box-shadow: 0 6px 16px rgba(27,106,38,.28); }
+.btn-primary:hover { background: var(--green-dark); }
+[data-theme="dark"] .btn-primary { color: #06281a; }
+.btn-accent { background: var(--orange); color: #fff; box-shadow: 0 6px 16px rgba(252,113,0,.3); }
+.btn-accent:hover { background: var(--orange-dark); }
+.btn-secondary { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-2); }
+.btn-soft { background: var(--green-soft); color: var(--green); }
+.btn-soft:hover { filter: brightness(.97); }
+[data-theme="dark"] .btn-soft { color: var(--green-dark); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); }
+.btn-google { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); font-weight: 500; }
+.btn-google:hover { background: var(--surface-2); }
+.btn-google svg { width: 19px; height: 19px; }
+.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: var(--r-sm); }
+.btn-lg { padding: 15px 26px; font-size: 16px; border-radius: var(--r-lg); }
+.btn-icon {
+  width: 44px; height: 44px; padding: 0;
+  border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+}
+.btn-icon:hover { background: var(--surface-2); }
+.btn-pill { border-radius: 99px; }
+
+/* ============ 04 · Campos ============ */
+.input {
+  width: 100%; max-width: 420px;
+  padding: 12px 14px;
+  font: inherit; font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input:focus { border-color: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+.input::placeholder { color: var(--muted); }
+select.input { max-width: 200px; }
+
+/* ============ 05 · Chips & badges ============ */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 11px; border-radius: 99px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.chip-green { background: var(--green-soft); color: var(--green); }
+[data-theme="dark"] .chip-green { color: var(--green-dark); }
+.chip-orange { background: var(--orange-soft); color: var(--orange); }
+.chip-neutral { background: var(--surface-2); color: var(--muted); }
+.chip .pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2.4s infinite; }
+
+/* ============ 06 · Cards ============ */
+.demo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 13px 14px;
+  font-size: 13.5px; line-height: 1.45;
+  max-width: 300px; text-align: left;
+  transition: border-color .15s, background .15s, transform .18s var(--ease), box-shadow .18s;
+  cursor: pointer;
+}
+.demo-card:hover { border-color: var(--green); background: var(--green-soft); transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.demo-card:active { transform: scale(.98); }
+.pantry-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
+  max-width: 420px; width: 100%;
+}
+.pantry-item .p-name { flex: 1; font-size: 14px; }
+.p-remove {
+  width: 30px; height: 30px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--muted);
+  display: grid; place-items: center;
+  transition: background .15s, color .15s;
+}
+.p-remove:hover { background: var(--danger-soft); color: var(--danger); }
+
+/* ============ 07 · Abas & nav (AMPLIADAS) ============ */
+.tabs-demo {
+  display: flex; gap: 6px; padding: 6px;
+  background: var(--surface-2); border-radius: 16px;
+  width: 100%; max-width: 520px;
+}
+.tab-demo {
+  flex: 1;
+  padding: 16px 12px;
+  border: 0; border-radius: 12px;
+  background: transparent; color: var(--muted);
+  font-size: 17px; font-weight: 600;
+  transition: background .2s, color .2s, box-shadow .2s, transform .1s var(--ease);
+}
+.tab-demo:active { transform: scale(.97); }
+.tab-demo.active { background: var(--green); color: #fff; box-shadow: 0 4px 14px rgba(27,106,38,.3); }
+[data-theme="dark"] .tab-demo.active { color: #06281a; }
+
+.bottomnav-demo {
+  display: flex; max-width: 420px; width: 100%;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 6px 8px;
+}
+.navbtn-demo {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 0 8px; border: 0; border-radius: var(--r-sm);
+  background: none; color: var(--muted);
+  font-size: 12px; font-weight: 500;
+  transition: color .15s, transform .1s;
+}
+.navbtn-demo svg { width: 24px; height: 24px; }
+.navbtn-demo.active { color: var(--green); }
+.navbtn-demo:active { transform: scale(.93); }
+
+/* ============ 08 · Feedback ============ */
+.typing .bubble {
+  display: inline-flex; gap: 5px; align-items: center;
+  padding: 16px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.typing .bubble span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+.typing .bubble span:nth-child(2) { animation-delay: .18s; }
+.typing .bubble span:nth-child(3) { animation-delay: .36s; }
+.spinner-svg { width: 46px; height: 46px; }
+
+/* ============ 09 · Movimento ============ */
+.motion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.motion-box {
+  border: 1px dashed var(--border); border-radius: var(--r-md);
+  padding: 20px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  text-align: center;
+}
+.motion-name { font-size: 12.5px; font-weight: 600; }
+.motion-spec { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+.anim-fadeup { width: 64px; height: 44px; border-radius: 10px; background: var(--green); animation: fadeUp 1.6s var(--ease) infinite; }
+.anim-floaty { width: 52px; animation: floaty 4.5s ease-in-out infinite; }
+.anim-pulse { width: 12px; height: 12px; border-radius: 50%; background: var(--orange); animation: pulse 2.4s infinite; }
+.anim-blink { display: flex; gap: 5px; }
+.anim-blink i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+.anim-blink i:nth-child(2) { animation-delay: .18s; }
+.anim-blink i:nth-child(3) { animation-delay: .36s; }
+
+/* ============ 10 · Raio & sombra ============ */
+.shape-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.shape {
+  width: 84px; height: 64px;
+  background: var(--green-soft);
+  border: 1.5px solid var(--green);
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 600; color: var(--green);
+  font-family: ui-monospace, monospace;
+}
+[data-theme="dark"] .shape { color: var(--green-dark); }
+.shadow-box {
+  width: 110px; height: 70px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--border);
+  display: grid; place-items: center;
+  font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace;
+}
+
+/* ============ Toast ============ */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(10px);
+  background: var(--text); color: var(--bg);
+  padding: 10px 18px; border-radius: 99px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s var(--ease), transform .25s var(--ease);
+  z-index: 100; max-width: calc(100vw - 40px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============ Keyframes oficiais ============ */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes blink  { 0%,80%,100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+footer.guide-footer {
+  text-align: center; padding: 0 20px 60px;
+  color: var(--muted); font-size: 12.5px;
+}
+@media (max-width: 560px) {
+  .ds-card { padding: 20px 16px; }
+  .type-meta { flex-basis: 100%; }
+  .tab-demo { font-size: 16px; padding: 15px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Símbolos reutilizáveis -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo-nutria" viewBox="0 0 140 92">
+    <path d="M18 62 C14 34 34 12 66 10 C70 12 72 16 72 20 C66 48 46 64 22 66 C20 65 18 64 18 62 Z" fill="#4f8f3a"/>
+    <path d="M22 60 C36 46 52 30 66 16" stroke="#3c7a2b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <g transform="translate(97 40)">
+      <circle r="27" fill="#fdeee0" stroke="#fc7100" stroke-width="6"/>
+      <g fill="#f2a458">
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(45)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(90)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(135)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(180)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(225)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(270)"/>
+        <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(315)"/>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="spinner-nutria" viewBox="0 0 200 200">
+    <g fill="#fc7100" stroke="#fc7100" stroke-width="15">
+      <circle r="20" cx="140" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 80;0 80;0 80;-80 80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle>
+      <circle r="20" cx="60" cy="60"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0;80 0;80 0;80 0;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle>
+      <circle r="20" cx="60" cy="140"><animateTransform attributeName="transform" type="translate" calcMode="spline" dur="2" values="0 0;0 0 ;0 0;0 -80;0 -80;" keySplines=".5 0 .5 1;.5 0 .5 1;.5 0 .5 1;.5 0 .5 1" repeatCount="indefinite"/></circle>
+    </g>
+  </symbol>
+</svg>
+
+<!-- ============ Topbar ============ -->
+<div class="topbar">
+  <svg class="topbar-logo"><use href="#logo-nutria"/></svg>
+  <div class="topbar-title">NutrIA<small>Guia de estilo</small></div>
+  <div class="topbar-spacer"></div>
+  <div class="switch-row">
+    <span class="switch-label">Modo escuro</span>
+    <button class="switch" id="theme-switch" aria-label="Alternar tema"></button>
+  </div>
+</div>
+
+<!-- ============ Hero ============ -->
+<header class="hero">
+  <svg class="bg-topo" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <path id="blob1" vector-effect="non-scaling-stroke" fill="none" d="M0 -120 C66 -114 120 -66 114 0 C108 66 64 118 -2 114 C-68 110 -118 64 -114 -2 C-110 -68 -64 -126 0 -120 Z"/>
+      <path id="blob2" vector-effect="non-scaling-stroke" fill="none" d="M0 -110 C50 -120 110 -80 116 -20 C122 40 80 70 40 96 C0 122 -60 116 -96 76 C-132 36 -118 -30 -84 -66 C-50 -102 -40 -100 0 -110 Z"/>
+    </defs>
+    <g stroke="#15561d" stroke-width="3" fill="none">
+      <path d="M-40 240 C180 200 340 300 560 260 C780 220 900 300 1120 260 C1300 228 1400 260 1480 240"/>
+      <path d="M-40 470 C200 430 380 510 620 470 C860 430 1040 510 1280 470 C1380 454 1440 462 1480 458"/>
+      <path d="M-40 760 C240 720 420 800 700 760 C980 720 1160 800 1480 750"/>
+      <g transform="translate(240 150)"><use href="#blob1" transform="scale(.22)"/><use href="#blob1" transform="scale(.4) rotate(8)"/><use href="#blob1" transform="scale(.6) rotate(-6)"/><use href="#blob1" transform="scale(.8) rotate(4)"/><use href="#blob1" transform="scale(1.02)"/></g>
+      <g transform="translate(1180 210)"><use href="#blob2" transform="scale(.2)"/><use href="#blob2" transform="scale(.38) rotate(10)"/><use href="#blob2" transform="scale(.56) rotate(-8)"/><use href="#blob2" transform="scale(.74)"/><use href="#blob2" transform="scale(.92) rotate(-4)"/></g>
+      <g transform="translate(760 660)"><use href="#blob1" transform="scale(.18)"/><use href="#blob1" transform="scale(.36) rotate(-7)"/><use href="#blob1" transform="scale(.54) rotate(6)"/><use href="#blob1" transform="scale(.72)"/><use href="#blob1" transform="scale(.9) rotate(3)"/></g>
+      <g transform="translate(170 720)"><use href="#blob2" transform="scale(.25)"/><use href="#blob2" transform="scale(.5) rotate(9)"/><use href="#blob2" transform="scale(.75)"/></g>
+      <g transform="translate(1330 700)"><use href="#blob1" transform="scale(.3)"/><use href="#blob1" transform="scale(.55) rotate(-8)"/><use href="#blob1" transform="scale(.8)"/></g>
+    </g>
+  </svg>
+  <div class="hero-inner">
+    <svg class="hero-logo"><use href="#logo-nutria"/></svg>
+    <h1>Nutr<em>IA</em></h1>
+    <p>A escolha inteligente para o seu prato.</p>
+    <div class="hero-chips">
+      <span class="hero-chip"><span class="dot" style="background:#1b6a26"></span>#1b6a26</span>
+      <span class="hero-chip"><span class="dot" style="background:#fc7100"></span>#fc7100</span>
+      <span class="hero-chip"><span class="dot" style="background:#ffffff"></span>#FFFFFF</span>
+      <span class="hero-chip">Poppins</span>
+    </div>
+  </div>
+</header>
+
+<main class="guide">
+
+  <!-- ============ 01 · CORES ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">01 · Fundações</div>
+    <h2 class="ds-title">Cores da marca</h2>
+    <p class="ds-desc">Toque em uma cor para copiar o HEX. O verde é a voz principal; o laranja, o acento de energia (Smart, destaques e contadores); o branco, o respiro.</p>
+    <div class="swatches">
+      <button class="swatch" data-hex="#1b6a26"><div class="swatch-color" style="background:#1b6a26"></div><div class="swatch-info"><div class="swatch-name">Verde NutrIA</div><div class="swatch-hex">#1b6a26</div></div></button>
+      <button class="swatch" data-hex="#fc7100"><div class="swatch-color" style="background:#fc7100"></div><div class="swatch-info"><div class="swatch-name">Laranja</div><div class="swatch-hex">#fc7100</div></div></button>
+      <button class="swatch" data-hex="#FFFFFF"><div class="swatch-color" style="background:#ffffff;border-bottom:1px solid var(--border)"></div><div class="swatch-info"><div class="swatch-name">Branco</div><div class="swatch-hex">#FFFFFF</div></div></button>
+      <button class="swatch" data-hex="#f6f7f6"><div class="swatch-color" style="background:#f6f7f6"></div><div class="swatch-info"><div class="swatch-name">Fundo</div><div class="swatch-hex">#f6f7f6</div></div></button>
+      <button class="swatch" data-hex="#1c231e"><div class="swatch-color" style="background:#1c231e"></div><div class="swatch-info"><div class="swatch-name">Texto</div><div class="swatch-hex">#1c231e</div></div></button>
+      <button class="swatch" data-hex="#6c7570"><div class="swatch-color" style="background:#6c7570"></div><div class="swatch-info"><div class="swatch-name">Muted</div><div class="swatch-hex">#6c7570</div></div></button>
+    </div>
+    <div class="ds-sub">Uso</div>
+    <div class="ds-row">
+      <span class="chip chip-green"><span class="pulse"></span>Primária · botões e ações</span>
+      <span class="chip chip-orange">Acento · Smart e alertas de energia</span>
+      <span class="chip chip-neutral">Neutros · superfícies e textos</span>
+    </div>
+  </section>
+
+  <!-- ============ 02 · TIPOGRAFIA ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">02 · Fundações</div>
+    <h2 class="ds-title">Tipografia — Poppins</h2>
+    <p class="ds-desc">Logotipo e títulos em <strong>Poppins Negrito (700)</strong>; interface em 400–600. Letter-spacing negativo (-0.02em) em display.</p>
+    <div class="type-sample"><span class="type-meta">Logo · 700 · 34</span><span class="t-logo">Nutr<em>IA</em></span></div>
+    <div class="type-sample"><span class="type-meta">H1 · 700 · 28</span><span class="t-h1">Olá! Eu sou o NutrIA.</span></div>
+    <div class="type-sample"><span class="type-meta">H2 · 600 · 21</span><span class="t-h2">Análise nutricional do almoço</span></div>
+    <div class="type-sample"><span class="type-meta">H3 · 600 · 16</span><span class="t-h3">Sugestões da despensa</span></div>
+    <div class="type-sample"><span class="type-meta">Body · 400 · 15</span><span class="t-body">A escolha inteligente para o seu prato.</span></div>
+    <div class="type-sample"><span class="type-meta">Small · 400 · 13</span><span class="t-small">Cardápios restantes hoje</span></div>
+    <div class="type-sample"><span class="type-meta">Caption · 600 · 11</span><span class="t-caption">Mantimentos · Refrigerados</span></div>
+  </section>
+
+  <!-- ============ 03 · BOTÕES ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">03 · Componentes</div>
+    <h2 class="ds-title">Botões</h2>
+    <p class="ds-desc">Raio 12px, peso 600, transição 150ms e <em>scale(.97)</em> no toque. Sombra colorida suave nas ações primárias.</p>
+    <div class="ds-sub">Variantes</div>
+    <div class="ds-row">
+      <button class="btn btn-primary">Entrar</button>
+      <button class="btn btn-accent">Modo Smart</button>
+      <button class="btn btn-secondary">Cancelar</button>
+      <button class="btn btn-soft">Despensa</button>
+      <button class="btn btn-danger">Sair da conta</button>
+    </div>
+    <div class="ds-sub">Tamanhos & formatos</div>
+    <div class="ds-row">
+      <button class="btn btn-primary btn-sm">Pequeno</button>
+      <button class="btn btn-primary">Médio</button>
+      <button class="btn btn-primary btn-lg">Grande</button>
+      <button class="btn btn-primary btn-pill">Pílula</button>
+      <button class="btn btn-icon" aria-label="Adicionar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="btn btn-primary" disabled>Desabilitado</button>
+    </div>
+    <div class="ds-sub">Social</div>
+    <div class="ds-row">
+      <button class="btn btn-google">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.13 7.13 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.97 11.97 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+        Continuar com Google
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ 04 · CAMPOS ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">04 · Componentes</div>
+    <h2 class="ds-title">Campos de formulário</h2>
+    <p class="ds-desc">Borda 1.5px, raio 12px, foco com anel verde de 4px. Fonte 16px no mobile (evita zoom no iOS).</p>
+    <div class="ds-col" style="align-items:flex-start">
+      <input class="input" type="text" placeholder="Pergunte ao NutrIA...">
+      <div class="ds-row">
+        <input class="input" type="number" placeholder="Qtd." style="max-width:90px">
+        <select class="input"><option>un</option><option>kg</option><option>g</option><option>ml</option></select>
+        <select class="input"><option>Mantimentos</option><option>Refrigerados</option><option>Hortifruti</option></select>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 · CHIPS ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">05 · Componentes</div>
+    <h2 class="ds-title">Chips & badges</h2>
+    <p class="ds-desc">Pílulas de 12px/600 para quantidades, categorias e estados. O ponto pulsante indica atividade ao vivo.</p>
+    <div class="ds-row">
+      <span class="chip chip-green">1 kg</span>
+      <span class="chip chip-green"><span class="pulse"></span>Modo Básico</span>
+      <span class="chip chip-orange">Cardápios restantes: 3</span>
+      <span class="chip chip-neutral">Hortifruti</span>
+      <span class="chip chip-neutral">Refrigerados</span>
+    </div>
+  </section>
+
+  <!-- ============ 06 · CARDS ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">06 · Componentes</div>
+    <h2 class="ds-title">Cards</h2>
+    <p class="ds-desc">Superfície branca, borda 1px, raio 12px. Hover: eleva 3px + borda verde + fundo verde-claro.</p>
+    <div class="ds-row" style="align-items:stretch">
+      <button class="demo-card">Analise meu almoço: arroz, feijão, frango grelhado e salada</button>
+      <div class="pantry-item">
+        <span class="p-name">Arroz</span>
+        <span class="chip chip-green">1 kg</span>
+        <span class="chip chip-neutral">Mantimentos</span>
+        <button class="p-remove" aria-label="Remover"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 · NAVEGAÇÃO ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">07 · Componentes</div>
+    <h2 class="ds-title">Abas & navegação inferior</h2>
+    <p class="ds-desc">Aba ativa = pílula verde com sombra; área de toque ampliada (mín. 48px de altura). Nav inferior com ícone + rótulo, ativo em verde.</p>
+    <div class="ds-col" style="align-items:flex-start; gap:20px">
+      <div class="tabs-demo">
+        <button class="tab-demo" data-tabs>Entrar</button>
+        <button class="tab-demo active" data-tabs>Cadastrar</button>
+      </div>
+      <div class="bottomnav-demo">
+        <button class="navbtn-demo active" data-nav>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat</span>
+        </button>
+        <button class="navbtn-demo" data-nav>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+          <span>Despensa</span>
+        </button>
+        <button class="navbtn-demo" data-nav>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Perfil</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 · FEEDBACK ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">08 · Componentes</div>
+    <h2 class="ds-title">Feedback & carregamento</h2>
+    <p class="ds-desc">Toast escuro em pílula; digitação com 3 pontos; spinner oficial da marca em laranja #fc7100.</p>
+    <div class="ds-row">
+      <button class="btn btn-primary" id="toast-demo">Mostrar toast</button>
+      <div class="typing"><div class="bubble"><span></span><span></span><span></span></div></div>
+      <svg class="spinner-svg"><use href="#spinner-nutria"/></svg>
+      <span style="font-size:13.5px;color:var(--muted)">Sugerindo opções:</span>
+    </div>
+  </section>
+
+  <!-- ============ 09 · MOVIMENTO ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">09 · Movimento</div>
+    <h2 class="ds-title">Animações oficiais</h2>
+    <p class="ds-desc">Easing padrão <code>cubic-bezier(.4,0,.2,1)</code>. Micro-interações 150ms · transições 200–300ms · entradas 500ms.</p>
+    <div class="motion-grid">
+      <div class="motion-box"><div class="anim-fadeup"></div><div class="motion-name">fadeUp</div><div class="motion-spec">500ms · entradas de cards e telas</div></div>
+      <div class="motion-box"><svg class="anim-floaty"><use href="#logo-nutria"/></svg><div class="motion-name">floaty</div><div class="motion-spec">4.5s · logo e destaques</div></div>
+      <div class="motion-box"><div class="anim-pulse"></div><div class="motion-name">pulse</div><div class="motion-spec">2.4s · indicadores ao vivo</div></div>
+      <div class="motion-box"><div class="anim-blink"><i></i><i></i><i></i></div><div class="motion-name">blink</div><div class="motion-spec">1.2s · digitação da IA</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 10 · FORMA ============ -->
+  <section class="ds-card">
+    <div class="ds-kicker">10 · Fundações</div>
+    <h2 class="ds-title">Raios & sombras</h2>
+    <p class="ds-desc">Raios: 10 / 12 / 14 / 22px. Sombras suaves e esverdeadas; elevação máxima no card de login.</p>
+    <div class="ds-sub">border-radius</div>
+    <div class="shape-row">
+      <div class="shape" style="border-radius:10px">10</div>
+      <div class="shape" style="border-radius:12px">12</div>
+      <div class="shape" style="border-radius:14px">14</div>
+      <div class="shape" style="border-radius:22px">22</div>
+      <div class="shape" style="border-radius:99px">99</div>
+    </div>
+    <div class="ds-sub">box-shadow</div>
+    <div class="shape-row">
+      <div class="shadow-box" style="box-shadow:var(--shadow-1)">sm</div>
+      <div class="shadow-box" style="box-shadow:var(--shadow-2)">md</div>
+      <div class="shadow-box" style="box-shadow:var(--shadow-3)">lg</div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="guide-footer">
+  NutrIA · Guia de estilo — verde #1b6a26 · laranja #fc7100 · branco #FFFFFF · Poppins<br>
+  “A escolha inteligente para o seu prato.”
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Toast */
+  var toastEl = document.getElementById("toast"), toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  /* Tema claro/escuro */
+  document.getElementById("theme-switch").addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    toast(next === "dark" ? "Modo escuro ativado 🌙" : "Modo claro ativado ☀️");
+  });
+
+  /* Copiar HEX das cores */
+  document.querySelectorAll(".swatch").forEach(function (sw) {
+    sw.addEventListener("click", function () {
+      var hex = sw.getAttribute("data-hex");
+      if (navigator.clipboard) navigator.clipboard.writeText(hex).catch(function () {});
+      toast(hex + " copiado!");
+    });
+  });
+
+  /* Toast demo */
+  document.getElementById("toast-demo").addEventListener("click", function () {
+    toast("Item adicionado à despensa 🧺");
+  });
+
+  /* Abas demo */
+  document.querySelectorAll("[data-tabs]").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll("[data-tabs]").forEach(function (t) {
+        t.classList.toggle("active", t === tab);
+      });
+    });
+  });
+
+  /* Nav demo */
+  document.querySelectorAll("[data-nav]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-nav]").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

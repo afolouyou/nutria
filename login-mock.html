@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>NutrIA</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/400.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/500.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/600.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/700.css">
+    <style>
+      :root {
+        --green: #1b6a26;
+        --green-dark: #15561d;
+        --orange: #fc7100;
+        --white: #ffffff;
+        --bg-card: #ffffff;
+        --surface-2: #f0f2f0;
+        --border: #e3e6e3;
+        --text: #1c231e;
+        --muted: #6c7570;
+        --danger: #dc2626;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 15px;
+        color: var(--text);
+        background: var(--green);
+        -webkit-tap-highlight-color: transparent;
+      }
+      button { font: inherit; cursor: pointer; }
+      a { text-decoration: none; }
+      svg { flex-shrink: 0; display: block; }
+
+      /* ============ Fundo topográfico ============ */
+      .bg-topo {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+
+      /* ============ Página ============ */
+      .login-page {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+        overflow-y: auto;
+      }
+
+      .login-card {
+        width: min(410px, 100%);
+        background: var(--bg-card);
+        border-radius: 22px;
+        padding: 30px 26px 26px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+        animation: cardIn .5s cubic-bezier(.4,0,.2,1) both;
+      }
+      @keyframes cardIn {
+        from { opacity: 0; transform: translateY(18px) scale(.98); }
+        to   { opacity: 1; transform: none; }
+      }
+
+      /* ============ Logo ============ */
+      .login-logo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 22px;
+      }
+      .login-logo .logo-svg { width: 118px; height: auto; margin-bottom: 4px; }
+      .login-logo h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--green);
+      }
+      .login-logo h1 em { font-style: normal; color: var(--orange); }
+      .login-logo p {
+        margin: 2px 0 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+
+      /* ============ Abas ============ */
+      .login-tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 18px;
+      }
+      .login-tab {
+        flex: 1;
+        padding: 10px 0;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+        transition: background .2s, color .2s;
+      }
+      .login-tab.active {
+        background: var(--green);
+        color: var(--white);
+        box-shadow: 0 3px 10px rgba(27, 106, 38, .3);
+      }
+
+      /* ============ Formulários ============ */
+      .login-form { display: flex; flex-direction: column; gap: 12px; }
+      .login-form[hidden] { display: none; }
+      .login-input {
+        width: 100%;
+        padding: 12px 14px;
+        font: inherit;
+        font-size: 15px;
+        color: var(--text);
+        background: var(--white);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .login-input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 4px rgba(27, 106, 38, .12);
+      }
+      .login-input::placeholder { color: var(--muted); }
+
+      .login-btn {
+        width: 100%;
+        padding: 13px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--green);
+        color: var(--white);
+        font-size: 15px;
+        font-weight: 600;
+        transition: background .15s, transform .12s;
+        box-shadow: 0 6px 16px rgba(27, 106, 38, .28);
+      }
+      .login-btn:hover { background: var(--green-dark); }
+      .login-btn:active { transform: scale(.98); }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 18px 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .divider::before, .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .google-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        background: var(--white);
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 500;
+        transition: background .15s, transform .12s;
+      }
+      .google-btn:hover { background: var(--surface-2); }
+      .google-btn:active { transform: scale(.98); }
+      .google-btn svg { width: 19px; height: 19px; }
+
+      /* ============ Toast ============ */
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        transform: translateX(-50%) translateY(10px);
+        background: var(--text);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .25s, transform .25s;
+        z-index: 10;
+        max-width: calc(100vw - 40px);
+        text-align: center;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+      @media (max-width: 420px) {
+        .login-card { padding: 26px 18px 20px; }
+        .login-logo h1 { font-size: 28px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ============ Fundo: curvas de nível (verde #1b6a26) ============ -->
+    <svg class="bg-topo" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <path id="blob1" vector-effect="non-scaling-stroke" fill="none"
+          d="M0 -120 C66 -114 120 -66 114 0 C108 66 64 118 -2 114 C-68 110 -118 64 -114 -2 C-110 -68 -64 -126 0 -120 Z"/>
+        <path id="blob2" vector-effect="non-scaling-stroke" fill="none"
+          d="M0 -110 C50 -120 110 -80 116 -20 C122 40 80 70 40 96 C0 122 -60 116 -96 76 C-132 36 -118 -30 -84 -66 C-50 -102 -40 -100 0 -110 Z"/>
+      </defs>
+
+      <rect width="1440" height="900" fill="#1b6a26"/>
+
+      <g stroke="#15561d" stroke-width="3" fill="none">
+        <!-- linhas onduladas -->
+        <path d="M-40 240 C180 200 340 300 560 260 C780 220 900 300 1120 260 C1300 228 1400 260 1480 240"/>
+        <path d="M-40 470 C200 430 380 510 620 470 C860 430 1040 510 1280 470 C1380 454 1440 462 1480 458"/>
+        <path d="M-40 760 C240 720 420 800 700 760 C980 720 1160 800 1480 750"/>
+
+        <!-- clusters de curvas de nível -->
+        <g transform="translate(240 150)">
+          <use href="#blob1" transform="scale(.22)"/>
+          <use href="#blob1" transform="scale(.4) rotate(8)"/>
+          <use href="#blob1" transform="scale(.6) rotate(-6)"/>
+          <use href="#blob1" transform="scale(.8) rotate(4)"/>
+          <use href="#blob1" transform="scale(1.02) rotate(-3)"/>
+          <use href="#blob1" transform="scale(1.28)"/>
+        </g>
+        <g transform="translate(1180 210)">
+          <use href="#blob2" transform="scale(.2)"/>
+          <use href="#blob2" transform="scale(.38) rotate(10)"/>
+          <use href="#blob2" transform="scale(.56) rotate(-8)"/>
+          <use href="#blob2" transform="scale(.74) rotate(5)"/>
+          <use href="#blob2" transform="scale(.92) rotate(-4)"/>
+          <use href="#blob2" transform="scale(1.15)"/>
+        </g>
+        <g transform="translate(760 640)">
+          <use href="#blob1" transform="scale(.18)"/>
+          <use href="#blob1" transform="scale(.36) rotate(-7)"/>
+          <use href="#blob1" transform="scale(.54) rotate(6)"/>
+          <use href="#blob1" transform="scale(.72) rotate(-4)"/>
+          <use href="#blob1" transform="scale(.9) rotate(3)"/>
+          <use href="#blob1" transform="scale(1.1) rotate(-2)"/>
+          <use href="#blob1" transform="scale(1.32)"/>
+        </g>
+        <g transform="translate(170 720)">
+          <use href="#blob2" transform="scale(.25)"/>
+          <use href="#blob2" transform="scale(.5) rotate(9)"/>
+          <use href="#blob2" transform="scale(.75) rotate(-6)"/>
+          <use href="#blob2" transform="scale(1.02) rotate(4)"/>
+        </g>
+        <g transform="translate(1330 700)">
+          <use href="#blob1" transform="scale(.3)"/>
+          <use href="#blob1" transform="scale(.55) rotate(-8)"/>
+          <use href="#blob1" transform="scale(.8) rotate(6)"/>
+          <use href="#blob1" transform="scale(1.06) rotate(-3)"/>
+        </g>
+        <g transform="translate(620 120)">
+          <use href="#blob2" transform="scale(.24)"/>
+          <use href="#blob2" transform="scale(.46) rotate(7)"/>
+          <use href="#blob2" transform="scale(.7) rotate(-5)"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- ============ Página de login ============ -->
+    <div class="login-page">
+      <div class="login-card">
+
+        <div class="login-logo">
+          <!-- Logo: folha + fatia de laranja -->
+          <svg class="logo-svg" viewBox="0 0 140 92" xmlns="http://www.w3.org/2000/svg" role="img" alt="NutrIA">
+            <!-- folha -->
+            <path d="M18 62 C14 34 34 12 66 10 C70 12 72 16 72 20 C66 48 46 64 22 66 C20 65 18 64 18 62 Z" fill="#4f8f3a"/>
+            <path d="M22 60 C36 46 52 30 66 16" stroke="#3c7a2b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <!-- fatia de laranja -->
+            <g transform="translate(97 40)">
+              <circle r="27" fill="#fdeee0" stroke="#fc7100" stroke-width="6"/>
+              <g fill="#f2a458">
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(45)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(90)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(135)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(180)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(225)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(270)"/>
+                <path d="M0 0 L18 -7 A19.5 19.5 0 0 1 18 7 Z" transform="rotate(315)"/>
+              </g>
+            </g>
+          </svg>
+          <h1>Nutr<em>IA</em></h1>
+          <p>A escolha inteligente para o seu prato</p>
+        </div>
+
+        <div class="login-tabs" role="tablist" aria-label="Entrar ou cadastrar">
+          <button type="button" class="login-tab active" id="tab-login" data-form="form-login">Entrar</button>
+          <button type="button" class="login-tab" id="tab-register" data-form="form-register">Cadastrar</button>
+        </div>
+
+        <!-- Entrar -->
+        <form class="login-form" id="form-login">
+          <input type="email" name="email" placeholder="Seu email" required autocomplete="email" class="login-input">
+          <input type="password" name="password" placeholder="Sua senha" required autocomplete="current-password" class="login-input">
+          <button type="submit" class="login-btn">Entrar</button>
+        </form>
+
+        <!-- Cadastrar -->
+        <form class="login-form" id="form-register" hidden>
+          <input type="text" name="name" placeholder="Seu nome" required autocomplete="name" class="login-input">
+          <input type="email" name="email" placeholder="Seu email" required autocomplete="email" class="login-input">
+          <input type="password" name="password" placeholder="Crie uma senha" required autocomplete="new-password" class="login-input">
+          <button type="submit" class="login-btn">Cadastrar</button>
+        </form>
+
+        <div class="divider">ou</div>
+
+        <a href="#" class="google-btn" id="google-btn">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/>
+            <path fill="#FBBC05" d="M5.27 14.29A7.13 7.13 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.97 11.97 0 0 0 0 10.76l3.98-3.09z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/>
+          </svg>
+          Continuar com Google
+        </a>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* Toast */
+        var toastEl = document.getElementById("toast"), toastTimer = null;
+        function toast(msg) {
+          toastEl.textContent = msg;
+          toastEl.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2400);
+        }
+
+        /* Abas Entrar / Cadastrar */
+        var tabs = document.querySelectorAll(".login-tab");
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            tabs.forEach(function (t) { t.classList.toggle("active", t === tab); });
+            document.getElementById("form-login").hidden = tab.dataset.form !== "form-login";
+            document.getElementById("form-register").hidden = tab.dataset.form !== "form-register";
+          });
+        });
+
+        /* Mock: sem backend ainda */
+        ["form-login", "form-register"].forEach(function (id) {
+          document.getElementById(id).addEventListener("submit", function (e) {
+            e.preventDefault();
+            toast("Mock de login — conecte ao backend Phoenix (/session/create).");
+          });
+        });
+        document.getElementById("google-btn").addEventListener("click", function (e) {
+          e.preventDefault();
+          toast("Mock — OAuth Google em /auth/google.");
+        });
+      })();
+    </script>
+  </body>
+</html>

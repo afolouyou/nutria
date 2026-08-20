@@ -7,16 +7,22 @@ defmodule Nutria.Accounts do
   alias Nutria.Auth.Token
 
   def register(attrs) do
-    %User{}
-    |> User.changeset(attrs)
-    |> Repo.insert()
-    |> case do
-      {:ok, user} ->
-        {:ok, token} = Token.create_token(user.id)
-        {:ok, %{user: user, token: token}}
+    email = attrs[:email] || attrs["email"]
 
-      error ->
-        format_error(error)
+    if email_exists?(email) do
+      {:error, :bad_request, "Ja existe uma conta com este email"}
+    else
+      %User{}
+      |> User.changeset(attrs)
+      |> Repo.insert()
+      |> case do
+        {:ok, user} ->
+          {:ok, token} = Token.create_token(user.id)
+          {:ok, %{user: user, token: token}}
+
+        error ->
+          format_error(error)
+      end
     end
   end
 
@@ -25,14 +31,14 @@ defmodule Nutria.Accounts do
 
     case Repo.get_by(User, email: email) do
       nil ->
-        {:error, :unauthorized, "Email ou senha inválidos"}
+        {:error, :not_found, "Conta nao encontrada para este email"}
 
       user ->
         if Bcrypt.verify_pass(password, user.password_hash || "") do
           {:ok, token} = Token.create_token(user.id)
           {:ok, %{user: user, token: token}}
         else
-          {:error, :unauthorized, "Email ou senha inválidos"}
+          {:error, :unauthorized, "Senha invalida"}
         end
     end
   end
@@ -110,4 +116,11 @@ defmodule Nutria.Accounts do
   end
 
   defp format_error(error), do: error
+
+  defp email_exists?(nil), do: false
+  defp email_exists?(""), do: false
+
+  defp email_exists?(email) do
+    Repo.get_by(User, email: String.downcase(to_string(email))) != nil
+  end
 end
