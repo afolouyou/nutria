@@ -1,9 +1,12 @@
 import Config
 
+socket_dir = System.get_env("POSTGRES_SOCKET_DIR")
+
 config :nutria, Nutria.Repo,
   username: System.get_env("POSTGRES_USER", System.get_env("USER", "folou")),
   password: System.get_env("POSTGRES_PASSWORD", ""),
-  socket_dir: System.get_env("POSTGRES_SOCKET_DIR", "/tmp/pgsocket"),
+  socket_dir: socket_dir,
+  hostname: System.get_env("POSTGRES_HOST", "localhost"),
   database: System.get_env("POSTGRES_DB", "nutria_dev"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -15,11 +18,6 @@ config :nutria_app, NutriaWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base:
-    "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it-ok",
-  watchers: [
-    tailwind: {Tailwind, :install_and_run, [:nutria, ~w(--watch)]}
-  ]
-
-config :nutria_app, :dev_routes, true
+    "dev-only-secret-key-base-that-is-at-least-64-bytes-long-for-phoenix-to-accept-it-ok"
 
 config :logger, :console, format: "[$level] $message\n"

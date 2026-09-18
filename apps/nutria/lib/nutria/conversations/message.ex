@@ -8,6 +8,7 @@ defmodule Nutria.Conversations.Message do
   schema "messages" do
     field(:role, :string)
     field(:text, :string)
+    field(:card, :map)
     belongs_to(:conversation, Nutria.Conversations.Conversation)
 
     timestamps(updated_at: false)
@@ -15,7 +16,7 @@ defmodule Nutria.Conversations.Message do
 
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:role, :text, :conversation_id])
+    |> cast(attrs, [:role, :text, :conversation_id, :card])
     |> validate_required([:role, :text, :conversation_id])
     |> validate_inclusion(:role, ["user", "assistant"])
   end

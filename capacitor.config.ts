@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
     // URL do servidor Phoenix (dev). Ajuste o IP para o host real no dispositivo.
-    url: process.env.CAPACITOR_SERVER_URL || 'http://10.0.2.2:4000'
+    url: process.env.CAPACITOR_SERVER_URL || 'https://nutria.shares.zrok.io'
   }
 };
 

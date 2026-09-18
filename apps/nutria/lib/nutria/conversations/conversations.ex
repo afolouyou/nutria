@@ -70,9 +70,9 @@ defmodule Nutria.Conversations do
     conv |> Conversation.changeset(%{}) |> Repo.update!()
   end
 
-  def add_message(conversation_id, role, text) do
+  def add_message(conversation_id, role, text, card \\ nil) do
     %Message{}
-    |> Message.changeset(%{conversation_id: conversation_id, role: role, text: text})
+    |> Message.changeset(%{conversation_id: conversation_id, role: role, text: text, card: card})
     |> Repo.insert()
   end
 
@@ -102,6 +102,7 @@ defmodule Nutria.Conversations do
       "id" => msg.id,
       "role" => msg.role,
       "text" => msg.text,
+      "card" => msg.card,
       "created_at" => DateTime.from_naive!(msg.inserted_at, "Etc/UTC") |> DateTime.to_iso8601()
     }
   end

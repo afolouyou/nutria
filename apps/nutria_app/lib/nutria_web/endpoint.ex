@@ -1,18 +1,6 @@
 defmodule NutriaWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :nutria_app
 
-  @session_options [
-    store: :cookie,
-    key: "_nutria_app_key",
-    signing_salt: "nutria",
-    same_site: "Lax"
-  ]
-
-  socket("/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
-  )
-
   plug(Plug.Static,
     at: "/",
     from: :nutria_app,
@@ -31,7 +19,6 @@ defmodule NutriaWeb.Endpoint do
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)
-  plug(Plug.Session, @session_options)
 
   plug(CORSPlug,
     origin: ["*"],

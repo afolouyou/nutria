@@ -5,6 +5,7 @@ defmodule Nutria.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Finch, name: Nutria.Finch},
       Nutria.Repo,
       {Task.Supervisor, name: Nutria.TaskSupervisor}
     ]

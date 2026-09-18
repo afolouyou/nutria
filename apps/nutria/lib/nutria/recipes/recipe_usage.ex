@@ -1,11 +1,17 @@
 defmodule Nutria.Recipes.RecipeUsage do
   @moduledoc """
-  Schema for tracking recipe generation usage (rate limiting).
+  Tracks weekly recipe generation usage per plan.
+
+  Limits come from `Nutria.Plans` (`:folha`/`:laranja` = 3/week). While
+  `Nutria.Plans.soft_limits?/0` is enabled the counter resets instead of
+  blocking (used during the preview fair).
   """
   use Ecto.Schema
   import Ecto.Query
 
+  alias Nutria.Plans
   alias Nutria.Repo
+  alias Nutria.Usage
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -17,29 +23,56 @@ defmodule Nutria.Recipes.RecipeUsage do
     timestamps(updated_at: false)
   end
 
-  @daily_limit 5
-
-  def can_generate?(user_id) do
-    remaining_today(user_id) > 0
+  def can_generate?(user_id, plan) do
+    case Plans.recipe_limit(plan) do
+      nil -> true
+      _limit -> remaining_this_week(user_id, plan) > 0 or Plans.soft_limits?()
+    end
   end
 
-  def remaining_today(user_id) do
-    today_start = NaiveDateTime.utc_now() |> NaiveDateTime.beginning_of_day()
-    today_end = NaiveDateTime.utc_now() |> NaiveDateTime.end_of_day()
+  @doc "Remaining recipes this week, or `nil` when the plan is unlimited."
+  def remaining_this_week(user_id, plan) do
+    case Plans.recipe_limit(plan) do
+      nil -> nil
+      limit -> max(0, limit - count_week(user_id))
+    end
+  end
 
-    count =
-      Repo.aggregate(
-        from(u in __MODULE__,
-          where: u.user_id == ^user_id,
-          where: u.used_at >= ^today_start and u.used_at <= ^today_end
-        ),
-        :count
+  def record_usage(user_id, plan) do
+    case Plans.recipe_limit(plan) do
+      nil ->
+        :ok
+
+      limit ->
+        if count_week(user_id) >= limit, do: reset_week(user_id)
+        insert_usage(user_id)
+    end
+  end
+
+  def count_week(user_id) do
+    {start_utc, end_utc} = Usage.week_window()
+
+    Repo.aggregate(
+      from(u in __MODULE__,
+        where: u.user_id == ^user_id,
+        where: u.used_at >= ^start_utc and u.used_at <= ^end_utc
+      ),
+      :count
+    )
+  end
+
+  def reset_week(user_id) do
+    {start_utc, end_utc} = Usage.week_window()
+
+    Repo.delete_all(
+      from(u in __MODULE__,
+        where: u.user_id == ^user_id,
+        where: u.used_at >= ^start_utc and u.used_at <= ^end_utc
       )
-
-    max(0, @daily_limit - count)
+    )
   end
 
-  def record_usage(user_id) do
+  defp insert_usage(user_id) do
     %__MODULE__{}
     |> Ecto.Changeset.change(%{
       user_id: user_id,

@@ -26,6 +26,14 @@ erl_crash.dump
 # Old project's git (has its own repo)
 /old/.git/
 
+# Local backups / scratch
+/nutria_app-og/
+/photo-popup.html
+/scripts/
+
+# Runtime uploads (avatars, etc.)
+/apps/nutria_app/priv/static/uploads/
+
 # IDE
 .vscode/
 .idea/

@@ -39,6 +39,27 @@ defmodule Nutria.Uploads do
     end
   end
 
+  def store_data_url(data_url, user_id) do
+    case parse_data_url(data_url) do
+      {:ok, content_type, binary} ->
+        if valid_type?(content_type) and byte_size(binary) <= @max_size do
+          ext = @extensions[content_type] || "png"
+          filename = "#{user_id}_#{System.system_time(:millisecond)}.#{ext}"
+          File.mkdir_p!(dir())
+
+          case File.write(Path.join(dir(), filename), binary) do
+            :ok -> {:ok, filename}
+            {:error, reason} -> {:error, :internal_error, "Não foi possível salvar a foto: #{inspect(reason)}"}
+          end
+        else
+          {:error, :bad_request, "Formato não suportado. Use JPG, PNG, WebP ou GIF."}
+        end
+
+      :error ->
+        {:error, :bad_request, "Imagem inválida."}
+    end
+  end
+
   def delete(filename) when is_binary(filename) and filename != "" do
     File.rm(Path.join(dir(), filename))
     :ok
@@ -84,6 +105,23 @@ defmodule Nutria.Uploads do
       _ -> "unknown"
     end
   end
+
+  defp parse_data_url("data:" <> rest) do
+    case String.split(rest, ";base64,", parts: 2) do
+      [mime, b64] ->
+        content_type = String.split(mime, ";") |> hd() |> String.trim()
+
+        case Base.decode64(b64) do
+          {:ok, binary} -> {:ok, content_type, binary}
+          _ -> :error
+        end
+
+      _ ->
+        :error
+    end
+  end
+
+  defp parse_data_url(_), do: :error
 
   defp content_type_from_headers(headers) do
     headers

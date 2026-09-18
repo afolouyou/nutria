@@ -11,6 +11,7 @@ defmodule Nutria.Accounts.User do
     field(:password_hash, :string)
     field(:provider, :string, default: "email")
     field(:avatar, :string)
+    field(:plan, :string, default: "free")
     field(:password, :string, virtual: true, redact: true)
 
     timestamps()
@@ -18,8 +19,9 @@ defmodule Nutria.Accounts.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :name, :password, :provider, :avatar])
+    |> cast(attrs, [:email, :name, :password, :provider, :avatar, :plan])
     |> validate_required([:email, :name, :provider])
+    |> validate_inclusion(:plan, ["free", "folha", "laranja"])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> unique_constraint(:email)
     |> downcase_email()

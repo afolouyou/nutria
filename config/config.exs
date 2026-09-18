@@ -27,23 +27,12 @@ config :nutria_app, NutriaWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Phoenix.Endpoint.Cowboy2Adapter,
   render_errors: [
-    formats: [html: NutriaWeb.ErrorHTML, json: NutriaWeb.ErrorJSON],
+    formats: [json: NutriaWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Nutria.PubSub,
-  live_view: [signing_salt: "GMVZPjA0hGN3WgCB"]
+  pubsub_server: Nutria.PubSub
 
 config :nutria_app, :generators, context_app: :nutria
-
-config :tailwind,
-  version: "4.0.17",
-  nutria: [
-    args: ~w(
-      --input=css/app.css
-      --output=../priv/static/assets/app.css
-    ),
-    cd: Path.expand("../apps/nutria_app/assets", __DIR__)
-  ]
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

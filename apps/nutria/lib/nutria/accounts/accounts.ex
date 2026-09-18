@@ -97,12 +97,27 @@ defmodule Nutria.Accounts do
     |> Repo.update()
   end
 
+  def clear_avatar(user) do
+    user
+    |> User.changeset(%{avatar: ""})
+    |> Repo.update()
+  end
+
   def user_to_map(%User{} = user) do
+    avatar_path =
+      case user.avatar do
+        "" -> ""
+        nil -> ""
+        filename -> "/uploads/avatars/#{filename}"
+      end
+
     %{
       "id" => user.id,
       "email" => user.email,
       "name" => user.name,
-      "provider" => user.provider
+      "provider" => user.provider,
+      "avatar" => avatar_path,
+      "plan" => user.plan || "free"
     }
   end
 

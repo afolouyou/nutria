@@ -49,6 +49,7 @@ defmodule Nutria.LLM.Providers.Zen do
     system_prompt = opts[:system_prompt]
     temperature = opts[:temperature] || 0.7
 
+    Process.delete(:zen_title_sent)
     request = build_request(messages, model, system_prompt, temperature, true)
 
     url = "#{@base_url}/v1/chat/completions"
@@ -129,9 +130,29 @@ defmodule Nutria.LLM.Providers.Zen do
 
           if json != "[DONE]" && json != "" do
             case Jason.decode(json) do
-              {:ok, %{"choices" => [%{"delta" => %{"content" => content}} | _]}} ->
-                if content do
-                  send(caller_pid, {:chunk, content})
+              {:ok, %{"choices" => [%{"delta" => delta} | _]}} ->
+                cond do
+                  content = delta["content"] ->
+                    send(caller_pid, {:chunk, content})
+
+                  reasoning = delta["reasoning_content"] ->
+                    if not Process.get(:zen_title_sent, false) do
+                      title =
+                        reasoning
+                        |> String.trim()
+                        |> String.replace(~r/^[-*\s]+/, "")
+                        |> String.split(~r/\s+/, parts: 6)
+                        |> Enum.take(5)
+                        |> Enum.join(" ")
+
+                      if title != "" do
+                        send(caller_pid, {:thinking_title, title})
+                        Process.put(:zen_title_sent, true)
+                      end
+                    end
+
+                  true ->
+                    :ok
                 end
 
               _ ->
@@ -154,6 +175,6 @@ defmodule Nutria.LLM.Providers.Zen do
   end
 
   defp default_model do
-    Application.get_env(:nutria, :llm)[:smart_model] || "deepseek-v4-flash-free"
+    Application.get_env(:nutria, :llm)[:smart_model] || "x-preview-f-free"
   end
 end

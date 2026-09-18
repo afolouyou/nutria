@@ -33,7 +33,8 @@ defmodule Nutria.MixProject do
       {:joken, "~> 2.6"},
       {:bcrypt_elixir, "~> 3.0"},
       {:req, "~> 0.5"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      {:floki, "~> 0.36"}
     ]
   end
 end
